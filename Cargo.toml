@@ -1,0 +1,11 @@
+[package]
+name = "gptrs"
+version = "0.1.0"
+authors = ["Jonathan <git@jonathansm.dev>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+crossterm = "0.26.1"
+ratatui = "0.24.0"
+tui-textarea = "0.3.1"
