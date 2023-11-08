@@ -15,22 +15,14 @@ pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
     // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
     // - https://github.com/ratatui-org/ratatui/tree/master/examples
 
-    // Main view
-    let main_block = Block::default()
-        .title("GPTrs")
-        .borders(Borders::NONE)
-        .border_type(BorderType::Rounded);
-
     let area = frame.size();
-
-    frame.render_widget(main_block, area);
 
     // The layout in that main view
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Max(6),
+            Constraint::Max(5),
             Constraint::Percentage(70),
             Constraint::Max(6),
         ])
@@ -57,7 +49,6 @@ pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
     frame.render_widget(title, main_layout[0]);
 
     // Chat list widget
-
     let chat_list = Paragraph::new(app.chat_text.clone())
         .scroll(app.chat_scroll)
         .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));

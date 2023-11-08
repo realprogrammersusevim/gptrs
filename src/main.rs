@@ -2,6 +2,7 @@ use gptrs::app::{App, AppResult};
 use gptrs::config::Config;
 use gptrs::event::{Event, EventHandler};
 use gptrs::handler::handle_key_events;
+use gptrs::handler::handle_mouse_events;
 use gptrs::tui::Tui;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
@@ -28,7 +29,7 @@ fn main() -> AppResult<()> {
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-            Event::Mouse(_) => {}
+            Event::Mouse(mouse_event) => handle_mouse_events(mouse_event, &mut app)?,
             Event::Resize(_, _) => {}
         }
     }
