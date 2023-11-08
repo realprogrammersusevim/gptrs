@@ -1,14 +1,17 @@
 use gptrs::app::{App, AppResult};
+use gptrs::config::Config;
 use gptrs::event::{Event, EventHandler};
 use gptrs::handler::handle_key_events;
 use gptrs::tui::Tui;
-use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use std::io;
 
 fn main() -> AppResult<()> {
     // Create an application.
     let mut app = App::new();
+
+    let config = Config::default();
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
@@ -20,7 +23,7 @@ fn main() -> AppResult<()> {
     // Start the main loop.
     while app.running {
         // Render the user interface.
-        tui.draw(&mut app)?;
+        tui.draw(&mut app, &config)?;
         // Handle events.
         match tui.events.next()? {
             Event::Tick => app.tick(),

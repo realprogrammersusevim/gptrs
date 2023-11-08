@@ -6,6 +6,10 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.4.7", features = ["derive"] }
 crossterm = "0.26.1"
+dirs = "5.0.1"
 ratatui = "0.24.0"
+serde = { version = "1.0.192", features = ["derive"] }
+serde_json = "1.0.108"
 tui-textarea = "0.3.1"

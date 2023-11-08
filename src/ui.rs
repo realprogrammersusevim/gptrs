@@ -1,15 +1,15 @@
 use ratatui::{
     layout::{Alignment, Layout},
     prelude::{Constraint, Direction},
-    style::{Color, Style},
     widgets::{Block, BorderType, Borders, Paragraph},
     Frame,
 };
 
 use crate::app::App;
+use crate::config::Config;
 
 /// Renders the user interface widgets.
-pub fn render(app: &mut App, frame: &mut Frame) {
+pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
     // This is where you add new widgets.
     // See the following resources:
     // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
@@ -39,14 +39,16 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     // Title widget
 
     let title = Paragraph::new(format!(
-        "ChatGPT Information\n\
-    Model: none\n\
-    API key: none\n\
-    API base: none"
+        "Model: {}\n\
+        API key: {}\n\
+        API base: {}",
+        config.model.as_ref().unwrap(),
+        config.api_key.as_ref().unwrap(),
+        config.api_base.as_ref().unwrap()
     ))
     .block(
         Block::default()
-            .title("Info")
+            .title("Information")
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded),

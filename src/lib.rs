@@ -12,3 +12,6 @@ pub mod tui;
 
 /// Event handler.
 pub mod handler;
+
+/// Configuration
+pub mod config;
