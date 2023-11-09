@@ -15,3 +15,6 @@ pub mod handler;
 
 /// Configuration
 pub mod config;
+
+/// Text input
+pub mod input;

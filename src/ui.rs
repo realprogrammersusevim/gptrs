@@ -58,11 +58,7 @@ pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
     // Input widget
 
     // let chat_input_text = Paragraph::new(app.key_input.clone()).block(key_block);
-    let chat_input_block = Block::default()
-        .title("Input")
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded);
-    let chat_input_text = Paragraph::new("Your input").block(chat_input_block);
+    let chat_input = app.input_editor.widget();
 
-    frame.render_widget(chat_input_text, main_layout[2])
+    frame.render_widget(chat_input, main_layout[2])
 }
