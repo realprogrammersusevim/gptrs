@@ -113,8 +113,7 @@ impl App<'_> {
             }
 
             sender.send(Event::EndGeneration).await.unwrap();
-        })
-        .await?;
+        });
 
         Ok(())
     }

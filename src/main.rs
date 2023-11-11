@@ -11,11 +11,12 @@ use std::io;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    // Set up our logging
     let log_dir = dirs::data_dir().unwrap().join("gptrs");
     if !log_dir.exists() {
         create_dir(log_dir.clone()).unwrap();
     }
-    simple_logging::log_to_file(log_dir.join("test.log"), LevelFilter::Debug).unwrap();
+    simple_logging::log_to_file(log_dir.join("test.log"), LevelFilter::Info).unwrap();
 
     // Create an application.
     let mut app = App::new();
