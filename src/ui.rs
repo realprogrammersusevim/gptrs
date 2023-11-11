@@ -6,10 +6,9 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Config;
 
 /// Renders the user interface widgets.
-pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
+pub fn render(app: &mut App, frame: &mut Frame) {
     // This is where you add new widgets.
     // See the following resources:
     // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
@@ -34,9 +33,9 @@ pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
         "Model: {}\n\
         API key: {}\n\
         API base: {}",
-        config.model.as_ref().unwrap(),
-        config.api_key.as_ref().unwrap(),
-        config.api_base.as_ref().unwrap()
+        app.config.model.as_ref().unwrap(),
+        app.config.api_key.as_ref().unwrap(),
+        app.config.api_base.as_ref().unwrap()
     ))
     .block(
         Block::default()
@@ -49,7 +48,7 @@ pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
     frame.render_widget(title, main_layout[0]);
 
     // Chat list widget
-    let chat_list = Paragraph::new(app.chat_text.clone())
+    let chat_list = Paragraph::new(app.chat_text.render_history())
         .scroll(app.chat_scroll)
         .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
 
@@ -57,7 +56,6 @@ pub fn render(app: &mut App, frame: &mut Frame, config: &Config) {
 
     // Input widget
 
-    // let chat_input_text = Paragraph::new(app.key_input.clone()).block(key_block);
     let chat_input = app.input_editor.widget();
 
     frame.render_widget(chat_input, main_layout[2])

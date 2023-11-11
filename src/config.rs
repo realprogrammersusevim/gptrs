@@ -2,6 +2,7 @@ use clap::Parser;
 use core::panic;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
+use std::env;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
@@ -90,6 +91,10 @@ impl Default for Config {
         } else if config.prompt.is_none() {
             panic!("Missing a prompt. Supply one in the configuration file or with a CLI argument.")
         }
+
+        // Annoyingly, the async-openai library only reads from this env var and can't be passed
+        // programmatically
+        env::set_var("OPENAI_API_KEY", config.api_key.clone().unwrap());
 
         config
     }

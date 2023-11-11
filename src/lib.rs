@@ -18,3 +18,6 @@ pub mod config;
 
 /// Text input
 pub mod input;
+
+/// Chat completion
+pub mod chat;

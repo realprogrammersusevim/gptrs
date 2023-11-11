@@ -104,6 +104,10 @@ impl<'a> StyledTextArea<'_> {
     pub fn widget(&mut self) -> impl Widget + '_ {
         self.0.widget()
     }
+
+    pub fn text(&mut self) -> String {
+        self.0.lines().join("\n")
+    }
 }
 
 impl Default for StyledTextArea<'_> {
