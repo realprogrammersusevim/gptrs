@@ -1,5 +1,5 @@
 use crate::chat::ChatHistory;
-use crate::config::Config;
+use crate::config::FinalConfig;
 use crate::event::Event;
 use crate::input::StyledTextArea;
 use async_openai::types::CreateChatCompletionRequestArgs;
@@ -18,7 +18,7 @@ pub struct App<'a> {
     /// Is the application running?
     pub running: bool,
     /// App configuration
-    pub config: Config,
+    pub config: FinalConfig,
     /// input editor
     pub input_editor: StyledTextArea<'a>,
     /// how much to scroll text
@@ -33,7 +33,7 @@ impl Default for App<'_> {
     fn default() -> Self {
         Self {
             running: true,
-            config: Config::default(),
+            config: FinalConfig::default(),
             input_editor: StyledTextArea::default(),
             chat_scroll: (0, 0),
             chat_text: ChatHistory::default(),
@@ -82,7 +82,7 @@ impl App<'_> {
         &mut self,
         sender: mpsc::Sender<Event>,
     ) -> Result<(), Box<dyn Error>> {
-        let model = self.config.model.clone().unwrap();
+        let model = self.config.model.clone();
         let messages = self.chat_text.history.clone();
         tokio::spawn(async move {
             let client = Client::new();

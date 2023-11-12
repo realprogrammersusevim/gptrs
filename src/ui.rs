@@ -21,7 +21,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Max(5),
+            Constraint::Max(4),
             Constraint::Percentage(70),
             Constraint::Max(6),
         ])
@@ -30,11 +30,9 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     // Title widget
     let title = Paragraph::new(format!(
         "Model: {}\n\
-        API key: {}\n\
-        API base: {}",
-        app.config.model.as_ref().unwrap(),
-        mask_api_key(app.config.api_key.as_ref().unwrap(), 5),
-        app.config.api_base.as_ref().unwrap()
+        API key: {}",
+        app.config.model,
+        mask_api_key(&app.config.api_key, 5),
     ))
     .block(
         Block::default()

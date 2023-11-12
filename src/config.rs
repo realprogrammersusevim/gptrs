@@ -79,6 +79,7 @@ impl Default for Config {
         config.api_key = config.api_key.or(config_file.api_key);
         config.model = config.model.or(config_file.model);
         config.prompt = config.prompt.or(config_file.prompt);
+        config.debug = config.debug.or(config_file.debug);
 
         // Check if we're missing info and panic if we are
         if config.api_key.is_none() {
@@ -97,10 +98,31 @@ impl Default for Config {
             config.debug = Some(false);
         }
 
+        config
+    }
+}
+
+#[derive(Debug)]
+pub struct FinalConfig {
+    pub api_key: String,
+    pub model: String,
+    pub prompt: Vec<Prompt>,
+    pub debug: bool,
+}
+
+impl Default for FinalConfig {
+    fn default() -> Self {
+        let config = Config::default();
+
         // Annoyingly, the async-openai library only reads from this env var and can't be passed
         // programmatically
         env::set_var("OPENAI_API_KEY", config.api_key.clone().unwrap());
 
-        config
+        Self {
+            api_key: config.api_key.unwrap(),
+            model: config.model.unwrap(),
+            prompt: config.prompt.unwrap(),
+            debug: config.debug.unwrap(),
+        }
     }
 }
