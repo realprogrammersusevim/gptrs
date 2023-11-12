@@ -28,13 +28,12 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .split(area);
 
     // Title widget
-
     let title = Paragraph::new(format!(
         "Model: {}\n\
         API key: {}\n\
         API base: {}",
         app.config.model.as_ref().unwrap(),
-        app.config.api_key.as_ref().unwrap(),
+        mask_api_key(app.config.api_key.as_ref().unwrap(), 5),
         app.config.api_base.as_ref().unwrap()
     ))
     .block(
@@ -55,8 +54,15 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     frame.render_widget(chat_list, main_layout[1]);
 
     // Input widget
-
     let chat_input = app.input_editor.widget();
 
     frame.render_widget(chat_input, main_layout[2])
+}
+
+/// Mask a displayed API key from shoulder snoopers
+///
+/// * `api_key` - The API key to mask
+/// * `visible` - The number of characters to leave visible at the beginning
+fn mask_api_key(api_key: &str, visible: usize) -> String {
+    api_key[0..visible].to_owned() + &"*".repeat(api_key.len() - visible)
 }
