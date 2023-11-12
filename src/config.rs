@@ -1,3 +1,4 @@
+use clap::ArgAction;
 use clap::Parser;
 use core::panic;
 use serde::{Deserialize, Serialize};
@@ -13,17 +14,26 @@ pub struct Prompt {
 }
 
 #[derive(Deserialize, Serialize, Parser, Debug)]
-pub struct Config {
-    #[arg(short = 'k', long)]
-    pub api_key: Option<String>,
-    #[arg(short = 'b', long)]
-    pub api_base: Option<String>,
-    #[arg(short, long)]
-    pub model: Option<String>,
-    #[arg(value_parser = parse_system_prompt)]
-    pub prompt: Option<Vec<Prompt>>,
-    #[arg(short, long)]
-    pub config_path: Option<PathBuf>,
+#[clap(
+    author,
+    version,
+    about = "A TUI to chat with LLMs. Values can be set with CLI args or in the config file."
+)]
+struct Config {
+    #[arg(short = 'k', long, help = "OpenAI API key to use.")]
+    api_key: Option<String>,
+    #[arg(short, long, help = "OpenAI model to use.")]
+    model: Option<String>,
+    #[arg(short, long, value_parser = parse_system_prompt, help = "The system prompt for the Chat model")]
+    prompt: Option<Vec<Prompt>>,
+    #[arg(
+        short,
+        long,
+        help = "Path to the custom configuration file you want to use."
+    )]
+    config_path: Option<PathBuf>,
+    #[clap(short, long, action = ArgAction::SetTrue, help = "Run in debug mode for increased logging.")]
+    debug: Option<bool>,
 }
 
 fn parse_system_prompt(arg: &str) -> Result<Vec<Prompt>> {
@@ -36,11 +46,7 @@ impl Default for Config {
         // Parse cli args
         let mut config = Config::parse();
         // Check if we even need to read the config file
-        if config.api_key.is_some()
-            && config.api_base.is_some()
-            && config.model.is_some()
-            && config.prompt.is_some()
-        {
+        if config.api_key.is_some() && config.model.is_some() && config.prompt.is_some() {
             return config;
         }
 
@@ -71,7 +77,6 @@ impl Default for Config {
 
         let config_file: Config = serde_json::from_str(&config_text).unwrap();
         config.api_key = config.api_key.or(config_file.api_key);
-        config.api_base = config.api_base.or(config_file.api_base);
         config.model = config.model.or(config_file.model);
         config.prompt = config.prompt.or(config_file.prompt);
 
@@ -80,16 +85,16 @@ impl Default for Config {
             panic!(
                 "Missing an API key. Supply one in the configuration file or with a CLI argument."
             )
-        } else if config.api_base.is_none() {
-            panic!(
-                "Missing an API base URL. Supply one in the configuration file or with a CLI argument."
-            )
         } else if config.model.is_none() {
             panic!(
                 "Missing a model to use. Supply one in the configuration file or with a CLI argument."
             )
         } else if config.prompt.is_none() {
             panic!("Missing a prompt. Supply one in the configuration file or with a CLI argument.")
+        }
+
+        if config.debug.is_none() {
+            config.debug = Some(false);
         }
 
         // Annoyingly, the async-openai library only reads from this env var and can't be passed
