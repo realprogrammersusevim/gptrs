@@ -6,6 +6,7 @@ use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::Client;
 use crossterm::event::KeyEvent;
 use futures::StreamExt;
+use log::{debug, error, info, warn};
 use std::error::Error;
 use tokio::sync::mpsc;
 
@@ -86,29 +87,35 @@ impl App<'_> {
         let messages = self.chat_text.history.clone();
         tokio::spawn(async move {
             let client = Client::new();
+            debug!("Created a new client");
 
             let request = CreateChatCompletionRequestArgs::default()
                 .model(model)
-                .max_tokens(512u16)
+                .max_tokens(2048u16)
                 .messages(messages)
                 .build()
                 .unwrap();
+            info!("New request: {:?}", request);
             let mut stream = client.chat().create_stream(request).await.unwrap();
             let mut first = true;
             while let Some(result) = stream.next().await {
+                debug!("Handling {:?}", result);
                 match result {
                     Ok(response) => {
                         for chat_choice in response.choices.iter() {
                             if let Some(ref content) = chat_choice.delta.content {
-                                sender
-                                    .send(Event::Token(content.to_string(), first))
-                                    .await
-                                    .unwrap();
+                                match sender.send(Event::Token(content.to_string(), first)).await {
+                                    Ok(()) => {}
+                                    Err(err) => {
+                                        error!("Couldn't send event because of this error: {err:?}. Assuming we shut down.");
+                                        return;
+                                    }
+                                }
                                 first = false;
                             }
                         }
                     }
-                    Err(res) => panic!("Error: returned response {:?}", res),
+                    Err(res) => warn!("Stream response returned {:?}", res),
                 }
             }
 

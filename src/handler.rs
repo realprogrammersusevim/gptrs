@@ -22,11 +22,7 @@ pub async fn handle_key_events(
         }
         KeyCode::Char('d') => {
             if key_event.modifiers.contains(KeyModifiers::CONTROL) {
-                // app.append_message();
                 sender.send(Event::Message).await?;
-                // app.generating = true;
-                // app.generate_response().await?;
-                // app.generating = false;
             } else {
                 app.edit_input(key_event);
             }

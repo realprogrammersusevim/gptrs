@@ -25,7 +25,7 @@ async fn main() -> AppResult<()> {
                 )
             });
         }
-        simple_logging::log_to_file(log_dir.join("test.log"), LevelFilter::Info).unwrap();
+        simple_logging::log_to_file(log_dir.join("test.log"), LevelFilter::Debug).unwrap();
     }
 
     // Initialize the terminal user interface.

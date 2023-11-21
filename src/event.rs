@@ -1,5 +1,6 @@
 use crate::app::AppResult;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
+use log::error;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::task;
@@ -63,10 +64,13 @@ impl EventHandler {
                     }
 
                     if last_tick.elapsed() >= tick_rate {
-                        sender
-                            .send(Event::Tick)
-                            .await
-                            .expect("failed to send tick event");
+                        match sender.send(Event::Tick).await {
+                            Ok(()) => {}
+                            Err(_) => {
+                                error!("Couldn't send the tick event. Assuming the app shut down.");
+                                return;
+                            }
+                        }
                         last_tick = Instant::now();
                     }
                 }
@@ -91,7 +95,7 @@ impl EventHandler {
         self.sender.clone()
     }
 
-    pub async fn send(&self, event: Event) {
-        self.sender.send(event).await.unwrap();
+    pub async fn send(&self, event: Event) -> Result<(), mpsc::error::SendError<Event>> {
+        self.sender.send(event).await
     }
 }
