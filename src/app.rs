@@ -1,4 +1,5 @@
 use crate::chat::ChatHistory;
+use crate::chat::Role;
 use crate::config::FinalConfig;
 use crate::event::Event;
 use crate::input::StyledTextArea;
@@ -32,14 +33,20 @@ pub struct App<'a> {
 
 impl Default for App<'_> {
     fn default() -> Self {
-        Self {
+        let config = FinalConfig::default();
+        let mut def = Self {
             running: true,
-            config: FinalConfig::default(),
+            config: config.clone(),
             input_editor: StyledTextArea::default(),
             chat_scroll: (0, 0),
             chat_text: ChatHistory::default(),
             generating: false,
+        };
+        for message in config.prompt {
+            def.chat_text
+                .push(crate::chat::Role::System, message.content);
         }
+        def
     }
 }
 
@@ -74,7 +81,7 @@ impl App<'_> {
 
     pub fn append_message(&mut self) {
         if !self.generating {
-            self.chat_text.push(self.input_editor.text());
+            self.chat_text.push(Role::User, self.input_editor.text());
             self.input_editor = StyledTextArea::default();
         }
     }

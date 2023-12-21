@@ -22,5 +22,5 @@ pub mod input;
 /// Chat completion
 pub mod chat;
 
-/// Markdown parser
-pub mod markdown;
+// Markdown parser
+// pub mod markdown;

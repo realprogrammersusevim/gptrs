@@ -1,3 +1,4 @@
+use async_openai::types::ChatCompletionRequestSystemMessageArgs;
 use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
     ChatCompletionRequestUserMessageArgs,
@@ -8,6 +9,12 @@ use ratatui::{
     text::Line,
 };
 use textwrap::wrap;
+
+pub enum Role {
+    User,
+    Assistant,
+    System,
+}
 
 #[derive(Default, Clone, Debug)]
 pub struct ChatHistory {
@@ -51,13 +58,29 @@ impl ChatHistory {
         message_text
     }
 
-    pub fn push(&mut self, text: String) {
-        self.history.push(ChatCompletionRequestMessage::User(
-            ChatCompletionRequestUserMessageArgs::default()
-                .content(text)
-                .build()
-                .unwrap(),
-        ));
+    pub fn push(&mut self, role: Role, text: String) {
+        let message = match role {
+            Role::User => ChatCompletionRequestMessage::User(
+                ChatCompletionRequestUserMessageArgs::default()
+                    .content(text)
+                    .build()
+                    .unwrap(),
+            ),
+            Role::Assistant => ChatCompletionRequestMessage::Assistant(
+                ChatCompletionRequestAssistantMessageArgs::default()
+                    .content(text)
+                    .build()
+                    .unwrap(),
+            ),
+            Role::System => ChatCompletionRequestMessage::System(
+                ChatCompletionRequestSystemMessageArgs::default()
+                    .content(text)
+                    .build()
+                    .unwrap(),
+            ),
+        };
+
+        self.history.push(message);
     }
 
     pub fn push_stream(&mut self, text: String, first: bool) {
@@ -98,6 +121,10 @@ impl ChatHistory {
         }
 
         message_lines
+    }
+
+    pub fn is_empty(&mut self) -> bool {
+        self.history.is_empty()
     }
 
     pub fn clear_message(&mut self) {

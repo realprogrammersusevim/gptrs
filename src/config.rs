@@ -102,7 +102,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FinalConfig {
     pub api_key: String,
     pub model: String,
