@@ -10,11 +10,7 @@ use ratatui::{
 };
 use textwrap::wrap;
 
-pub enum Role {
-    User,
-    Assistant,
-    System,
-}
+use crate::config::{Prompt, Role};
 
 #[derive(Default, Clone, Debug)]
 pub struct ChatHistory {
@@ -58,23 +54,23 @@ impl ChatHistory {
         message_text
     }
 
-    pub fn push(&mut self, role: Role, text: String) {
-        let message = match role {
+    pub fn push(&mut self, prompt: Prompt) {
+        let message = match prompt.role {
             Role::User => ChatCompletionRequestMessage::User(
                 ChatCompletionRequestUserMessageArgs::default()
-                    .content(text)
+                    .content(prompt.content)
                     .build()
                     .unwrap(),
             ),
             Role::Assistant => ChatCompletionRequestMessage::Assistant(
                 ChatCompletionRequestAssistantMessageArgs::default()
-                    .content(text)
+                    .content(prompt.content)
                     .build()
                     .unwrap(),
             ),
             Role::System => ChatCompletionRequestMessage::System(
                 ChatCompletionRequestSystemMessageArgs::default()
-                    .content(text)
+                    .content(prompt.content)
                     .build()
                     .unwrap(),
             ),

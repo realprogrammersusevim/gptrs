@@ -7,9 +7,17 @@ use std::env;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    User,
+    Assistant,
+    System,
+}
+
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct Prompt {
-    pub role: String,
+    pub role: Role,
     pub content: String,
 }
 
@@ -75,7 +83,12 @@ impl Default for Config {
                 )
             });
 
-        let config_file: Config = serde_json::from_str(&config_text).unwrap();
+        let config_file: Config = serde_json::from_str(&config_text).unwrap_or_else(|_| {
+            panic!(
+                "Could not parse config file {}",
+                config.config_path.clone().unwrap().to_str().unwrap()
+            )
+        });
         config.api_key = config.api_key.or(config_file.api_key);
         config.model = config.model.or(config_file.model);
         config.prompt = config.prompt.or(config_file.prompt);

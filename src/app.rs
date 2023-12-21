@@ -1,6 +1,6 @@
 use crate::chat::ChatHistory;
-use crate::chat::Role;
 use crate::config::FinalConfig;
+use crate::config::{Prompt, Role};
 use crate::event::Event;
 use crate::input::StyledTextArea;
 use async_openai::types::CreateChatCompletionRequestArgs;
@@ -43,8 +43,7 @@ impl Default for App<'_> {
             generating: false,
         };
         for message in config.prompt {
-            def.chat_text
-                .push(crate::chat::Role::System, message.content);
+            def.chat_text.push(message);
         }
         def
     }
@@ -81,7 +80,10 @@ impl App<'_> {
 
     pub fn append_message(&mut self) {
         if !self.generating {
-            self.chat_text.push(Role::User, self.input_editor.text());
+            self.chat_text.push(Prompt {
+                role: Role::User,
+                content: self.input_editor.text(),
+            });
             self.input_editor = StyledTextArea::default();
         }
     }
