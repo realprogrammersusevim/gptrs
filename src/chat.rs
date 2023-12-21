@@ -16,6 +16,7 @@ use crate::config::{Prompt, Role};
 pub struct ChatHistory {
     pub history: Vec<ChatCompletionRequestMessage>,
     pub current_response: String,
+    pub text_width: u16,
 }
 
 impl ChatHistory {
@@ -31,7 +32,7 @@ impl ChatHistory {
                         },
                         None => "".to_string(),
                     };
-                    let wrapped = wrap(&text, 80); // TODO: Don't hardcode this value
+                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this value
                     for line in wrapped {
                         message_text.push(Line::styled(
                             line.to_string(),
@@ -41,7 +42,7 @@ impl ChatHistory {
                 }
                 ChatCompletionRequestMessage::Assistant(message) => {
                     let text = message.content.clone().unwrap_or("No content".to_string());
-                    let wrapped = wrap(&text, 80); // TODO: Don't hardcode this either
+                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this either
                     for line in wrapped {
                         message_text
                             .push(Line::styled(line.to_string(), Style::new().bg(Color::Red)));
@@ -104,12 +105,12 @@ impl ChatHistory {
                         },
                         None => "".to_string(),
                     };
-                    let wrapped = wrap(&text, 80); // TODO: Don't hardcode this value
+                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this value
                     message_lines += wrapped.len();
                 }
                 ChatCompletionRequestMessage::Assistant(message) => {
                     let text = message.content.clone().unwrap_or("No content".to_string());
-                    let wrapped = wrap(&text, 80); // TODO: Don't hardcode this either
+                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this either
                     message_lines += wrapped.len();
                 }
                 _ => {}

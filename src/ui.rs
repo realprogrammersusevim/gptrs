@@ -45,6 +45,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     frame.render_widget(title, main_layout[0]);
 
     // Chat list widget
+    app.chat_text.text_width = main_layout[1].width - 2;
     let chat_list = Paragraph::new(app.chat_text.render_history())
         .scroll(app.chat_scroll)
         .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
