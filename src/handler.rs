@@ -44,7 +44,17 @@ pub async fn handle_start_generation(
     app: &mut App<'_>,
     sender: mpsc::Sender<Event>,
 ) -> AppResult<()> {
-    app.start_generation(sender).await?;
+    if !app.config.offline {
+        app.start_generation(sender).await?;
+    } else {
+        sender
+            .send(Event::Token(
+                "Running in **offline** mode.".to_string(),
+                true,
+            ))
+            .await?;
+        sender.send(Event::EndGeneration).await?;
+    }
 
     Ok(())
 }

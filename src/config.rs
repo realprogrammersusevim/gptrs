@@ -42,6 +42,8 @@ struct Config {
     config_path: Option<PathBuf>,
     #[clap(short, long, action = ArgAction::SetTrue, help = "Run in debug mode for increased logging.")]
     debug: Option<bool>,
+    #[clap(short, long, action = ArgAction::SetTrue, help = "Run offline for testing")]
+    offline: Option<bool>,
 }
 
 fn parse_system_prompt(arg: &str) -> Result<Vec<Prompt>> {
@@ -93,6 +95,7 @@ impl Default for Config {
         config.model = config.model.or(config_file.model);
         config.prompt = config.prompt.or(config_file.prompt);
         config.debug = config.debug.or(config_file.debug);
+        config.offline = config.offline.or(config_file.offline);
 
         // Check if we're missing info and panic if we are
         if config.api_key.is_none() {
@@ -111,6 +114,10 @@ impl Default for Config {
             config.debug = Some(false);
         }
 
+        if config.offline.is_none() {
+            config.offline = Some(false);
+        }
+
         config
     }
 }
@@ -121,6 +128,7 @@ pub struct FinalConfig {
     pub model: String,
     pub prompt: Vec<Prompt>,
     pub debug: bool,
+    pub offline: bool,
 }
 
 impl Default for FinalConfig {
@@ -136,6 +144,7 @@ impl Default for FinalConfig {
             model: config.model.unwrap(),
             prompt: config.prompt.unwrap(),
             debug: config.debug.unwrap(),
+            offline: config.offline.unwrap(),
         }
     }
 }
