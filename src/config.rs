@@ -54,71 +54,78 @@ fn parse_system_prompt(arg: &str) -> Result<Vec<Prompt>> {
 impl Default for Config {
     fn default() -> Self {
         // Parse cli args
-        let mut config = Config::parse();
-        // Check if we even need to read the config file
-        if config.api_key.is_some() && config.model.is_some() && config.prompt.is_some() {
-            return config;
-        }
+        let mut config_cli = Config::parse();
 
         // Check the file path
-        if config.config_path.is_none() {
-            config.config_path = Some(
+        if config_cli.config_path.is_none() {
+            config_cli.config_path = Some(
                 dirs::config_dir()
                     .unwrap()
                     .join("gptrs")
                     .join("config.json"),
             );
-            if !config.config_path.clone().unwrap().exists() {
+            if !config_cli.config_path.clone().unwrap().exists() {
                 panic!(
                     "Could not find config file {}",
-                    config.config_path.unwrap().to_str().unwrap()
+                    config_cli.config_path.unwrap().to_str().unwrap()
                 )
             }
         }
 
         // Read config file
         let config_text =
-            read_to_string(config.config_path.clone().unwrap()).unwrap_or_else(|_| {
+            read_to_string(config_cli.config_path.clone().unwrap()).unwrap_or_else(|_| {
                 panic!(
                     "Could not read config file {}",
-                    config.config_path.clone().unwrap().to_str().unwrap()
+                    config_cli.config_path.clone().unwrap().to_str().unwrap()
                 )
             });
 
         let config_file: Config = serde_json::from_str(&config_text).unwrap_or_else(|_| {
             panic!(
                 "Could not parse config file {}",
-                config.config_path.clone().unwrap().to_str().unwrap()
+                config_cli.config_path.clone().unwrap().to_str().unwrap()
             )
         });
-        config.api_key = config.api_key.or(config_file.api_key);
-        config.model = config.model.or(config_file.model);
-        config.prompt = config.prompt.or(config_file.prompt);
-        config.debug = config.debug.or(config_file.debug);
-        config.offline = config.offline.or(config_file.offline);
+        config_cli.api_key = config_cli.api_key.or(config_file.api_key);
+        config_cli.model = config_cli.model.or(config_file.model);
+        config_cli.prompt = config_cli.prompt.or(config_file.prompt);
+        // While the above options will either have a value or be None the flags will
+        // either be True if set or False if not
+        config_cli.debug = if !config_cli.debug.unwrap() {
+            config_file.debug
+        } else {
+            config_cli.debug
+        };
+        config_cli.offline = if !config_cli.offline.unwrap() {
+            config_file.offline
+        } else {
+            config_cli.offline
+        };
 
         // Check if we're missing info and panic if we are
-        if config.api_key.is_none() {
+        if config_cli.api_key.is_none() {
             panic!(
                 "Missing an API key. Supply one in the configuration file or with a CLI argument."
             )
-        } else if config.model.is_none() {
+        } else if config_cli.model.is_none() {
             panic!(
                 "Missing a model to use. Supply one in the configuration file or with a CLI argument."
             )
-        } else if config.prompt.is_none() {
+        } else if config_cli.prompt.is_none() {
             panic!("Missing a prompt. Supply one in the configuration file or with a CLI argument.")
         }
 
-        if config.debug.is_none() {
-            config.debug = Some(false);
+        if config_cli.debug.is_none() {
+            config_cli.debug = Some(false);
         }
 
-        if config.offline.is_none() {
-            config.offline = Some(false);
+        if config_cli.offline.is_none() {
+            config_cli.offline = Some(false);
         }
 
-        config
+
+        config_cli
     }
 }
 
