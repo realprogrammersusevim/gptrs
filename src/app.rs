@@ -1,8 +1,7 @@
-use crate::chat::ChatHistory;
-use crate::config::FinalConfig;
 use crate::config::{Prompt, Role};
 use crate::event::Event;
-use crate::input::StyledTextArea;
+use crate::input::{Mode, StyledTextArea, Transition, Vim};
+use crate::{chat::ChatHistory, config::FinalConfig};
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::Client;
 use crossterm::event::KeyEvent;
@@ -10,6 +9,7 @@ use futures::StreamExt;
 use log::{debug, error, info, warn};
 use std::error::Error;
 use tokio::sync::mpsc;
+use tui_textarea::TextArea;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn Error>>;
@@ -22,7 +22,9 @@ pub struct App<'a> {
     /// App configuration
     pub config: FinalConfig,
     /// input editor
-    pub input_editor: StyledTextArea<'a>,
+    pub input_editor: TextArea<'a>,
+    /// the vim mode handler
+    pub vim: Vim,
     /// how much to scroll text
     pub chat_scroll: (u16, u16),
     /// the text of the chat
@@ -38,13 +40,26 @@ impl Default for App<'_> {
             running: true,
             config: config.clone(),
             input_editor: StyledTextArea::default(),
+            vim: Vim::new(Mode::Normal),
             chat_scroll: (0, 0),
             chat_text: ChatHistory::default(),
             generating: false,
         };
+
         for message in config.prompt {
             def.chat_text.push(message);
         }
+
+        if config.vim {
+            def.input_editor.set_block(
+                StyledTextArea::default()
+                    .block()
+                    .unwrap()
+                    .clone()
+                    .title(def.vim.mode.to_string()),
+            );
+        }
+
         def
     }
 }
@@ -75,14 +90,34 @@ impl App<'_> {
     }
 
     pub fn edit_input(&mut self, input: KeyEvent) {
-        self.input_editor.input_event(input);
+        if self.config.vim {
+            self.vim = match self
+                .vim
+                .transition(StyledTextArea::into_input(input), &mut self.input_editor)
+            {
+                Transition::Mode(mode) if self.vim.mode != mode => {
+                    self.input_editor.set_block(
+                        StyledTextArea::default()
+                            .block()
+                            .unwrap()
+                            .clone()
+                            .title(mode.to_string()),
+                    );
+                    Vim::new(mode)
+                }
+                Transition::Nop | Transition::Mode(_) => self.vim.clone(),
+                Transition::Pending(input) => self.vim.clone().with_pending(input),
+            }
+        } else {
+            self.input_editor.input(StyledTextArea::into_input(input));
+        }
     }
 
     pub fn append_message(&mut self) {
         if !self.generating {
             self.chat_text.push(Prompt {
                 role: Role::User,
-                content: self.input_editor.text(),
+                content: StyledTextArea::text(&mut self.input_editor),
             });
             self.input_editor = StyledTextArea::default();
         }

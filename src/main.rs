@@ -28,6 +28,8 @@ async fn main() -> AppResult<()> {
         simple_logging::log_to_file(log_dir.join("test.log"), LevelFilter::Debug).unwrap();
     }
 
+    debug!("{:?}", app);
+
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend).unwrap();

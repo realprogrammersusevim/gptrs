@@ -19,4 +19,4 @@ serde_json = "1.0.108"
 simple-logging = "2.0.2"
 textwrap = "0.16.0"
 tokio = { version = "1.34.0", features = ["full"] }
-tui-textarea = "0.3.1"
+tui-textarea = "0.4.0"

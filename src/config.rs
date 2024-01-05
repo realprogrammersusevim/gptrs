@@ -44,6 +44,8 @@ struct Config {
     debug: Option<bool>,
     #[clap(short, long, action = ArgAction::SetTrue, help = "Run offline for testing")]
     offline: Option<bool>,
+    #[clap(short, long, action = ArgAction::SetTrue, help = "Use Vim keybindings for text input.")]
+    vim: Option<bool>,
 }
 
 fn parse_system_prompt(arg: &str) -> Result<Vec<Prompt>> {
@@ -102,6 +104,11 @@ impl Default for Config {
         } else {
             config_cli.offline
         };
+        config_cli.vim = if !config_cli.vim.unwrap() {
+            config_file.vim
+        } else {
+            config_cli.vim
+        };
 
         // Check if we're missing info and panic if we are
         if config_cli.api_key.is_none() {
@@ -124,6 +131,9 @@ impl Default for Config {
             config_cli.offline = Some(false);
         }
 
+        if config_cli.vim.is_none() {
+            config_cli.vim = Some(false);
+        }
 
         config_cli
     }
@@ -136,6 +146,7 @@ pub struct FinalConfig {
     pub prompt: Vec<Prompt>,
     pub debug: bool,
     pub offline: bool,
+    pub vim: bool,
 }
 
 impl Default for FinalConfig {
@@ -152,6 +163,7 @@ impl Default for FinalConfig {
             prompt: config.prompt.unwrap(),
             debug: config.debug.unwrap(),
             offline: config.offline.unwrap(),
+            vim: config.vim.unwrap(),
         }
     }
 }
