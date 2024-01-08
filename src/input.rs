@@ -334,6 +334,15 @@ impl Vim {
             }
             Mode::Insert => match input {
                 Input { key: Key::Esc, .. } => Transition::Mode(Mode::Normal),
+                Input {
+                    key: Key::Char('w'),
+                    ctrl: true,
+                    ..
+                } => {
+                    // Delete one word back
+                    textarea.delete_word();
+                    Transition::Mode(Mode::Insert)
+                }
                 input => {
                     textarea.input_without_shortcuts(input); // Don't use the default mappings
                     Transition::Mode(Mode::Insert)
