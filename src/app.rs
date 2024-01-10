@@ -39,7 +39,7 @@ impl Default for App<'_> {
         let mut def = Self {
             running: true,
             config: config.clone(),
-            input_editor: StyledTextArea::default(),
+            input_editor: StyledTextArea::styled_default(),
             vim: Vim::new(Mode::Normal),
             chat_scroll: (0, 0),
             chat_text: ChatHistory::default(),
@@ -52,7 +52,7 @@ impl Default for App<'_> {
 
         if config.vim {
             def.input_editor.set_block(
-                StyledTextArea::default()
+                StyledTextArea::styled_default()
                     .block()
                     .unwrap()
                     .clone()
@@ -97,7 +97,7 @@ impl App<'_> {
             {
                 Transition::Mode(mode) if self.vim.mode != mode => {
                     self.input_editor.set_block(
-                        StyledTextArea::default()
+                        StyledTextArea::styled_default()
                             .block()
                             .unwrap()
                             .clone()
@@ -119,7 +119,7 @@ impl App<'_> {
                 role: Role::User,
                 content: StyledTextArea::text(&mut self.input_editor),
             });
-            self.input_editor = StyledTextArea::default();
+            self.input_editor = StyledTextArea::styled_default();
         }
     }
 

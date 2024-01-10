@@ -356,7 +356,7 @@ impl Vim {
 pub struct StyledTextArea<'a>(TextArea<'a>);
 
 impl<'a> StyledTextArea<'_> {
-    pub fn default() -> TextArea<'a> {
+    pub fn styled_default() -> TextArea<'a> {
         let mut editor = TextArea::default();
         let block = Block::default()
             .borders(Borders::ALL)

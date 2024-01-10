@@ -10,6 +10,7 @@ use std::fs::create_dir;
 use std::io;
 
 #[tokio::main]
+#[allow(clippy::pedantic)]
 async fn main() -> AppResult<()> {
     // Create an application.
     let mut app = App::new();
