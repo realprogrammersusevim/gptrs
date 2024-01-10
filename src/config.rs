@@ -48,6 +48,7 @@ struct Config {
     vim: Option<bool>,
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn parse_system_prompt(arg: &str) -> Result<Vec<Prompt>> {
     let prompt: Vec<Prompt> = serde_json::from_str(arg).unwrap();
     Ok(prompt)
@@ -56,7 +57,7 @@ fn parse_system_prompt(arg: &str) -> Result<Vec<Prompt>> {
 impl Default for Config {
     fn default() -> Self {
         // Parse cli args
-        let mut config_cli = Config::parse();
+        let mut config_cli = Self::parse();
 
         // Check the file path
         if config_cli.config_path.is_none() {
@@ -66,12 +67,11 @@ impl Default for Config {
                     .join("gptrs")
                     .join("config.json"),
             );
-            if !config_cli.config_path.clone().unwrap().exists() {
-                panic!(
-                    "Could not find config file {}",
-                    config_cli.config_path.unwrap().to_str().unwrap()
-                )
-            }
+            assert!(
+                config_cli.config_path.clone().unwrap().exists(),
+                "Could not find config file {}",
+                config_cli.config_path.unwrap().to_str().unwrap()
+            );
         }
 
         // Read config file
@@ -83,7 +83,7 @@ impl Default for Config {
                 )
             });
 
-        let config_file: Config = serde_json::from_str(&config_text).unwrap_or_else(|_| {
+        let config_file: Self = serde_json::from_str(&config_text).unwrap_or_else(|_| {
             panic!(
                 "Could not parse config file {}",
                 config_cli.config_path.clone().unwrap().to_str().unwrap()
@@ -94,20 +94,20 @@ impl Default for Config {
         config_cli.prompt = config_cli.prompt.or(config_file.prompt);
         // While the above options will either have a value or be None the flags will
         // either be True if set or False if not
-        config_cli.debug = if !config_cli.debug.unwrap() {
-            config_file.debug
-        } else {
+        config_cli.debug = if config_cli.debug.unwrap() {
             config_cli.debug
-        };
-        config_cli.offline = if !config_cli.offline.unwrap() {
-            config_file.offline
         } else {
+            config_file.debug
+        };
+        config_cli.offline = if config_cli.offline.unwrap() {
             config_cli.offline
-        };
-        config_cli.vim = if !config_cli.vim.unwrap() {
-            config_file.vim
         } else {
+            config_file.offline
+        };
+        config_cli.vim = if config_cli.vim.unwrap() {
             config_cli.vim
+        } else {
+            config_file.vim
         };
 
         // Check if we're missing info and panic if we are
@@ -140,7 +140,7 @@ impl Default for Config {
 }
 
 #[derive(Debug, Clone)]
-pub struct FinalConfig {
+pub struct Final {
     pub api_key: String,
     pub model: String,
     pub prompt: Vec<Prompt>,
@@ -149,7 +149,7 @@ pub struct FinalConfig {
     pub vim: bool,
 }
 
-impl Default for FinalConfig {
+impl Default for Final {
     fn default() -> Self {
         let config = Config::default();
 

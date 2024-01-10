@@ -1,7 +1,7 @@
 use crate::config::{Prompt, Role};
 use crate::event::Event;
 use crate::input::{Mode, StyledTextArea, Transition, Vim};
-use crate::{chat::ChatHistory, config::FinalConfig};
+use crate::{chat::History, config::Final};
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::Client;
 use crossterm::event::KeyEvent;
@@ -11,6 +11,7 @@ use std::error::Error;
 use tokio::sync::mpsc;
 use tui_textarea::TextArea;
 
+#[allow(clippy::module_name_repetitions)]
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -20,7 +21,7 @@ pub struct App<'a> {
     /// Is the application running?
     pub running: bool,
     /// App configuration
-    pub config: FinalConfig,
+    pub config: Final,
     /// input editor
     pub input_editor: TextArea<'a>,
     /// the vim mode handler
@@ -28,21 +29,21 @@ pub struct App<'a> {
     /// how much to scroll text
     pub chat_scroll: (u16, u16),
     /// the text of the chat
-    pub chat_text: ChatHistory,
+    pub chat_text: History,
     /// Is GPT currently generating text?
     pub generating: bool,
 }
 
 impl Default for App<'_> {
     fn default() -> Self {
-        let config = FinalConfig::default();
+        let config = Final::default();
         let mut def = Self {
             running: true,
             config: config.clone(),
             input_editor: StyledTextArea::styled_default(),
             vim: Vim::new(Mode::Normal),
             chat_scroll: (0, 0),
-            chat_text: ChatHistory::default(),
+            chat_text: History::default(),
             generating: false,
         };
 
@@ -66,19 +67,20 @@ impl Default for App<'_> {
 
 impl App<'_> {
     /// Constructs a new instance of [`App`].
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Handles the tick event of the terminal.
-    pub fn tick(&self) {}
+    pub const fn tick(&self) {}
 
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
         self.running = false;
     }
     pub fn scroll_down(&mut self) {
-        if self.chat_scroll.0 < self.chat_text.len() as u16 - 1 {
+        if self.chat_scroll.0 < u16::try_from(self.chat_text.len()).unwrap_or(10) - 1 {
             self.chat_scroll.0 += 1;
         }
     }
@@ -89,6 +91,9 @@ impl App<'_> {
         }
     }
 
+    /// # Panics
+    ///
+    /// Will panic if ``StyledTextArea`` cannot be created
     pub fn edit_input(&mut self, input: KeyEvent) {
         if self.config.vim {
             self.vim = match self
@@ -123,10 +128,14 @@ impl App<'_> {
         }
     }
 
-    pub async fn start_generation(
-        &mut self,
-        sender: mpsc::Sender<Event>,
-    ) -> Result<(), Box<dyn Error>> {
+    /// # Panics
+    ///
+    /// Will panic if a request cannot be created
+    ///
+    /// # Errors
+    ///
+    /// Returns Ok
+    pub fn start_generation(&mut self, sender: mpsc::Sender<Event>) -> Result<(), Box<dyn Error>> {
         let model = self.config.model.clone();
         let messages = self.chat_text.history.clone();
         tokio::spawn(async move {
@@ -146,7 +155,7 @@ impl App<'_> {
                 debug!("Handling {:?}", result);
                 match result {
                     Ok(response) => {
-                        for chat_choice in response.choices.iter() {
+                        for chat_choice in &response.choices {
                             if let Some(ref content) = chat_choice.delta.content {
                                 match sender.send(Event::Token(content.to_string(), first)).await {
                                     Ok(()) => {}

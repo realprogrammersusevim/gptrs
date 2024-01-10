@@ -55,7 +55,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     // Input widget
     let chat_input = app.input_editor.widget();
 
-    frame.render_widget(chat_input, main_layout[2])
+    frame.render_widget(chat_input, main_layout[2]);
 }
 
 /// Mask a displayed API key from shoulder snoopers

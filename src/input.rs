@@ -18,10 +18,10 @@ pub enum Mode {
 impl fmt::Display for Mode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Mode::Normal => write!(f, "Normal"),
-            Mode::Insert => write!(f, "Insert"),
-            Mode::Visual => write!(f, "Visual"),
-            Mode::Operator(c) => write!(f, "Operator ({})", c),
+            Self::Normal => write!(f, "Normal"),
+            Self::Insert => write!(f, "Insert"),
+            Self::Visual => write!(f, "Visual"),
+            Self::Operator(c) => write!(f, "Operator ({c})"),
         }
     }
 }
@@ -39,6 +39,7 @@ pub struct Vim {
 }
 
 impl Vim {
+    #[must_use]
     pub fn new(mode: Mode) -> Self {
         Self {
             mode,
@@ -46,13 +47,15 @@ impl Vim {
         }
     }
 
-    pub fn with_pending(self, pending: Input) -> Self {
+    #[must_use]
+    pub const fn with_pending(self, pending: Input) -> Self {
         Self {
             mode: self.mode,
             pending,
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn transition(&self, input: Input, textarea: &mut TextArea<'_>) -> Transition {
         if input.key == Key::Null {
             return Transition::Nop;
@@ -259,7 +262,7 @@ impl Vim {
                         }
                     ) =>
                     {
-                        textarea.move_cursor(CursorMove::Top)
+                        textarea.move_cursor(CursorMove::Top);
                     }
                     Input {
                         key: Key::Char('G'),
@@ -356,6 +359,7 @@ impl Vim {
 pub struct StyledTextArea<'a>(TextArea<'a>);
 
 impl<'a> StyledTextArea<'_> {
+    #[must_use]
     pub fn styled_default() -> TextArea<'a> {
         let mut editor = TextArea::default();
         let block = Block::default()
@@ -365,7 +369,8 @@ impl<'a> StyledTextArea<'_> {
         editor
     }
 
-    pub fn into_input(event: KeyEvent) -> Input {
+    #[must_use]
+    pub const fn into_input(event: KeyEvent) -> Input {
         match event.code {
             KeyCode::Backspace => Input {
                 key: Key::Backspace,
@@ -427,7 +432,7 @@ impl<'a> StyledTextArea<'_> {
                 ctrl: event.modifiers.contains(KeyModifiers::CONTROL),
                 shift: event.modifiers.contains(KeyModifiers::SHIFT),
             },
-            KeyCode::BackTab => Input {
+            KeyCode::BackTab | KeyCode::Insert => Input {
                 key: Key::Null,
                 alt: event.modifiers.contains(KeyModifiers::ALT),
                 ctrl: event.modifiers.contains(KeyModifiers::CONTROL),
@@ -435,12 +440,6 @@ impl<'a> StyledTextArea<'_> {
             },
             KeyCode::Delete => Input {
                 key: Key::Delete,
-                alt: event.modifiers.contains(KeyModifiers::ALT),
-                ctrl: event.modifiers.contains(KeyModifiers::CONTROL),
-                shift: event.modifiers.contains(KeyModifiers::SHIFT),
-            },
-            KeyCode::Insert => Input {
-                key: Key::Null,
                 alt: event.modifiers.contains(KeyModifiers::ALT),
                 ctrl: event.modifiers.contains(KeyModifiers::CONTROL),
                 shift: event.modifiers.contains(KeyModifiers::SHIFT),
@@ -470,7 +469,7 @@ impl<'a> StyledTextArea<'_> {
         let lines = textarea.lines();
         let mut tui_lines = vec![];
         for line in lines {
-            tui_lines.push(Line::from(line.to_string()))
+            tui_lines.push(Line::from(line.to_string()));
         }
 
         tui_lines

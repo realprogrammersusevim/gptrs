@@ -29,7 +29,7 @@ pub enum Event {
 /// Terminal event handler.
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct EventHandler {
+pub struct Handler {
     /// Event sender channel.
     sender: mpsc::Sender<Event>,
     /// Event receiver channel.
@@ -38,7 +38,8 @@ pub struct EventHandler {
     handler: task::JoinHandle<()>,
 }
 
-impl EventHandler {
+impl Handler {
+    #[must_use]
     /// Constructs a new instance of [`EventHandler`].
     pub fn new(tick_rate: u64) -> Self {
         let tick_rate = Duration::from_millis(tick_rate);
@@ -60,18 +61,16 @@ impl EventHandler {
                             _ => unimplemented!(),
                         }
                         .await
-                        .expect("failed to send terminal event")
+                        .expect("failed to send terminal event");
                     }
 
                     if last_tick.elapsed() >= tick_rate {
-                        match sender.send(Event::Tick).await {
-                            Ok(()) => {}
-                            Err(_) => {
-                                error!("Couldn't send the tick event. Assuming the app shut down.");
-                                return;
-                            }
+                        if matches!(sender.send(Event::Tick).await, Ok(())) {
+                            last_tick = Instant::now();
+                        } else {
+                            error!("Couldn't send the tick event. Assuming the app shut down.");
+                            return;
                         }
-                        last_tick = Instant::now();
                     }
                 }
             })
@@ -91,6 +90,7 @@ impl EventHandler {
         Ok(self.receiver.recv().await.unwrap())
     }
 
+    #[must_use]
     pub fn sender(&self) -> mpsc::Sender<Event> {
         self.sender.clone()
     }

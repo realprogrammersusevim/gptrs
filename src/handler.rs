@@ -13,7 +13,7 @@ pub async fn handle_key_events(
 ) -> AppResult<()> {
     match key_event.code {
         // Exit application on `Ctrl-C`
-        KeyCode::Char('c') | KeyCode::Char('C') => {
+        KeyCode::Char('c' | 'C') => {
             if key_event.modifiers == KeyModifiers::CONTROL {
                 app.quit();
             } else {
@@ -44,9 +44,7 @@ pub async fn handle_start_generation(
     app: &mut App<'_>,
     sender: mpsc::Sender<Event>,
 ) -> AppResult<()> {
-    if !app.config.offline {
-        app.start_generation(sender).await?;
-    } else {
+    if app.config.offline {
         sender
             .send(Event::Token(
                 "Running in **offline** mode.".to_string(),
@@ -54,12 +52,14 @@ pub async fn handle_start_generation(
             ))
             .await?;
         sender.send(Event::EndGeneration).await?;
+    } else {
+        app.start_generation(sender)?;
     }
 
     Ok(())
 }
 
-pub fn handle_token(app: &mut App<'_>, token: String, first: bool) -> AppResult<()> {
+pub fn handle_token(app: &mut App<'_>, token: &str, first: bool) -> AppResult<()> {
     app.chat_text.push_stream(token, first);
 
     Ok(())

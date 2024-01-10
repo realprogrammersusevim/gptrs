@@ -1,5 +1,5 @@
 use crate::app::{App, AppResult};
-use crate::event::EventHandler;
+use crate::event::Handler;
 use crate::ui;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
@@ -17,12 +17,12 @@ pub struct Tui<B: Backend> {
     /// Interface to the Terminal.
     terminal: Terminal<B>,
     /// Terminal event handler.
-    pub events: EventHandler,
+    pub events: Handler,
 }
 
 impl<B: Backend> Tui<B> {
     /// Constructs a new instance of [`Tui`].
-    pub fn new(terminal: Terminal<B>, events: EventHandler) -> Self {
+    pub fn new(terminal: Terminal<B>, events: Handler) -> Self {
         Self { terminal, events }
     }
 

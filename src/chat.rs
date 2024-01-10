@@ -13,25 +13,28 @@ use textwrap::wrap;
 use crate::config::{Prompt, Role};
 
 #[derive(Default, Clone, Debug)]
-pub struct ChatHistory {
+pub struct History {
     pub history: Vec<ChatCompletionRequestMessage>,
     pub current_response: String,
     pub text_width: u16,
 }
 
-impl ChatHistory {
+impl History {
+    /// # Panics
+    ///
+    /// Will panic if the response somehow contains something other than text
     pub fn render_history(&mut self) -> Vec<Line> {
         let mut message_text = vec![];
-        for message in self.history.iter() {
+        for message in &self.history {
             match message {
                 ChatCompletionRequestMessage::User(message) => {
-                    let text = match &message.content {
-                        Some(content) => match content {
-                            Text(text) => text.to_owned(),
+                    let text = message
+                        .content
+                        .as_ref()
+                        .map_or_else(String::new, |content| match content {
+                            Text(text) => text.clone(),
                             Array(_) => panic!("GPTrs only supports text."),
-                        },
-                        None => "".to_string(),
-                    };
+                        });
                     let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this value
                     for line in wrapped {
                         message_text.push(Line::styled(
@@ -41,7 +44,10 @@ impl ChatHistory {
                     }
                 }
                 ChatCompletionRequestMessage::Assistant(message) => {
-                    let text = message.content.clone().unwrap_or("No content".to_string());
+                    let text = message
+                        .content
+                        .clone()
+                        .unwrap_or_else(|| "No content".to_string());
                     let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this either
                     for line in wrapped {
                         message_text
@@ -55,6 +61,10 @@ impl ChatHistory {
         message_text
     }
 
+    /// # Panics
+    ///
+    /// Will panic if the ``ChatCompletionRequestMessage`` cannot be created with the ``Prompt``
+    /// content
     pub fn push(&mut self, prompt: Prompt) {
         let message = match prompt.role {
             Role::User => ChatCompletionRequestMessage::User(
@@ -80,7 +90,10 @@ impl ChatHistory {
         self.history.push(message);
     }
 
-    pub fn push_stream(&mut self, text: String, first: bool) {
+    /// # Panics
+    ///
+    /// Will panic if the ``ChatCompletionRequestAssistantMessageArgs`` cannot be created
+    pub fn push_stream(&mut self, text: &str, first: bool) {
         self.current_response += &text;
         if !first {
             self.history.pop();
@@ -90,26 +103,32 @@ impl ChatHistory {
                 .content(&self.current_response)
                 .build()
                 .unwrap(),
-        ))
+        ));
     }
 
+    /// # Panics
+    ///
+    /// Will panic if response contains something other than text
     pub fn len(&mut self) -> usize {
         let mut message_lines = 0;
-        for message in self.history.iter() {
+        for message in &self.history {
             match message {
                 ChatCompletionRequestMessage::User(message) => {
-                    let text = match &message.content {
-                        Some(content) => match content {
-                            Text(text) => text.to_owned(),
+                    let text = message
+                        .content
+                        .as_ref()
+                        .map_or_else(String::new, |content| match content {
+                            Text(text) => text.clone(),
                             Array(_) => panic!("GPTrs only supports text."),
-                        },
-                        None => "".to_string(),
-                    };
+                        });
                     let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this value
                     message_lines += wrapped.len();
                 }
                 ChatCompletionRequestMessage::Assistant(message) => {
-                    let text = message.content.clone().unwrap_or("No content".to_string());
+                    let text = message
+                        .content
+                        .clone()
+                        .unwrap_or_else(|| "No content".to_string());
                     let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this either
                     message_lines += wrapped.len();
                 }
@@ -125,6 +144,6 @@ impl ChatHistory {
     }
 
     pub fn clear_message(&mut self) {
-        self.current_response = "".to_string();
+        self.current_response = String::new();
     }
 }
