@@ -79,15 +79,15 @@ impl App<'_> {
     pub fn quit(&mut self) {
         self.running = false;
     }
-    pub fn scroll_down(&mut self) {
-        if self.chat_scroll.0 < u16::try_from(self.chat_text.len()).unwrap_or(10) - 1 {
-            self.chat_scroll.0 += 1;
+    pub fn scroll_down(&mut self, by_lines: u16) {
+        if self.chat_scroll.0 < u16::try_from(self.chat_text.len()).unwrap_or(10) - (by_lines) {
+            self.chat_scroll.0 += by_lines;
         }
     }
 
-    pub fn scroll_up(&mut self) {
-        if self.chat_scroll.0 > 0 {
-            self.chat_scroll.0 -= 1;
+    pub fn scroll_up(&mut self, by_lines: u16) {
+        if self.chat_scroll.0 > (by_lines - 1) {
+            self.chat_scroll.0 -= by_lines;
         }
     }
 

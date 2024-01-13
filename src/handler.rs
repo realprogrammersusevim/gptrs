@@ -72,11 +72,33 @@ pub fn handle_end(app: &mut App<'_>) -> AppResult<()> {
     Ok(())
 }
 
-pub fn handle_mouse_events(mouse_event: MouseEvent, app: &mut App<'_>) -> AppResult<()> {
-    match mouse_event.kind {
-        MouseEventKind::ScrollUp => app.scroll_up(),
-        MouseEventKind::ScrollDown => app.scroll_down(),
-        _ => {}
+pub fn handle_mouse_events(
+    mouse_event: MouseEvent,
+    second_event: Option<MouseEvent>,
+    app: &mut App<'_>,
+) -> AppResult<()> {
+    match second_event {
+        Some(second) => {
+            if mouse_event.kind == MouseEventKind::ScrollUp
+                && second.kind == MouseEventKind::ScrollDown
+            {
+                return Ok(()); // If you scroll up once and down once that cancels out and we don't
+                               // move
+            } else if mouse_event.kind == MouseEventKind::ScrollDown
+                && second.kind == MouseEventKind::ScrollDown
+            {
+                app.scroll_down(2);
+            } else if mouse_event.kind == MouseEventKind::ScrollUp
+                && second.kind == MouseEventKind::ScrollUp
+            {
+                app.scroll_up(2);
+            }
+        }
+        None => match mouse_event.kind {
+            MouseEventKind::ScrollUp => app.scroll_up(1),
+            MouseEventKind::ScrollDown => app.scroll_down(1),
+            _ => {}
+        },
     }
 
     Ok(())
