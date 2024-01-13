@@ -64,14 +64,17 @@ async fn main() -> AppResult<()> {
             Event::Key(key_event) => {
                 handle_key_events(key_event, &mut app, tui.events.sender()).await?;
             }
-            Event::Mouse(mouse_event) => {
+            Event::Mouse(first) => {
                 // If there are two mouse events we can handle both of them at once.
-                let first = mouse_event;
                 let second = tui.events.next().await?;
                 peeked = true;
                 peeked_event = second.clone();
                 match second {
                     Event::Mouse(second_mouse) => {
+                        debug!(
+                            "Handling two mouse events at once, {:?} and {:?}",
+                            first, second_mouse
+                        );
                         handle_mouse_events(first, Some(second_mouse), &mut app)?
                     }
                     _ => handle_mouse_events(first, None, &mut app)?,
