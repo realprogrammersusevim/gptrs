@@ -33,6 +33,9 @@ pub async fn handle_key_events(
 }
 
 pub async fn handle_new_message(app: &mut App<'_>, sender: mpsc::Sender<Event>) -> AppResult<()> {
+    if app.input_editor.is_empty() {
+        return Ok(());
+    }
     app.append_message();
     app.generating = true;
     sender.send(Event::StartGeneration).await?;
