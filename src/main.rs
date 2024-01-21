@@ -1,12 +1,14 @@
 use gptrs::app::{App, AppResult};
 use gptrs::event::{Event, Handler};
-use gptrs::handler::{handle_end, handle_key_events, handle_new_message, handle_token};
-use gptrs::handler::{handle_mouse_events, handle_start_generation};
+use gptrs::handler::{
+    handle_end, handle_key_events, handle_mouse_events, handle_new_message,
+    handle_start_generation, handle_token,
+};
 use gptrs::tui::Tui;
+use gptrs::utils::initialize_logger;
 use log::{debug, LevelFilter};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use std::fs::create_dir;
 use std::io;
 
 #[tokio::main]
@@ -15,17 +17,7 @@ async fn main() -> AppResult<()> {
     let mut app = App::new();
 
     if app.config.debug {
-        // Set up our logging
-        let log_dir = dirs::data_dir().unwrap().join("gptrs");
-        if !log_dir.exists() {
-            create_dir(log_dir.clone()).unwrap_or_else(|_| {
-                panic!(
-                    "Could not create the the logging directory {}",
-                    log_dir.display()
-                )
-            });
-        }
-        simple_logging::log_to_file(log_dir.join("test.log"), LevelFilter::Debug).unwrap();
+        initialize_logger();
     }
 
     debug!("{:?}", app);

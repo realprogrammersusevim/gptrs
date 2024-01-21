@@ -101,3 +101,16 @@ pub mod input;
 #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
 /// Chat completion
 pub mod chat;
+
+#[warn(
+    clippy::pedantic,
+    clippy::perf,
+    clippy::complexity,
+    clippy::suspicious,
+    clippy::style,
+    clippy::correctness,
+    clippy::nursery
+)]
+#[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+/// Random utility functions
+pub mod utils;
