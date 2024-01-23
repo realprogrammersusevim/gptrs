@@ -35,7 +35,7 @@ impl History {
                             Text(text) => text.clone(),
                             Array(_) => panic!("GPTrs only supports text."),
                         });
-                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this value
+                    let wrapped = wrap(&text, self.text_width as usize);
                     for line in wrapped {
                         message_text.push(Line::styled(
                             line.to_string(),
@@ -48,7 +48,7 @@ impl History {
                         .content
                         .clone()
                         .unwrap_or_else(|| "No content".to_string());
-                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this either
+                    let wrapped = wrap(&text, self.text_width as usize);
                     for line in wrapped {
                         message_text
                             .push(Line::styled(line.to_string(), Style::new().bg(Color::Red)));
@@ -121,7 +121,7 @@ impl History {
                             Text(text) => text.clone(),
                             Array(_) => panic!("GPTrs only supports text."),
                         });
-                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this value
+                    let wrapped = wrap(&text, self.text_width as usize);
                     message_lines += wrapped.len();
                 }
                 ChatCompletionRequestMessage::Assistant(message) => {
@@ -129,7 +129,7 @@ impl History {
                         .content
                         .clone()
                         .unwrap_or_else(|| "No content".to_string());
-                    let wrapped = wrap(&text, self.text_width as usize); // TODO: Don't hardcode this either
+                    let wrapped = wrap(&text, self.text_width as usize);
                     message_lines += wrapped.len();
                 }
                 _ => {}

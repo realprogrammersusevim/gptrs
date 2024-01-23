@@ -6,7 +6,7 @@ use gptrs::handler::{
 };
 use gptrs::tui::Tui;
 use gptrs::utils::initialize_logger;
-use log::{debug, LevelFilter};
+use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
@@ -20,7 +20,7 @@ async fn main() -> AppResult<()> {
         initialize_logger();
     }
 
-    debug!("{:?}", app);
+    // debug!("{:?}", app);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
@@ -49,7 +49,9 @@ async fn main() -> AppResult<()> {
             event = tui.events.next().await?;
         }
 
-        debug!("The event we're handling is {:?}", event);
+        if event != Event::Tick {
+            debug!("Handling event {:?}", event);
+        }
 
         match event {
             Event::Tick => app.tick(),

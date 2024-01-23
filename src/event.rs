@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::task;
 
 /// Terminal events.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Event {
     /// Terminal tick.
     Tick,

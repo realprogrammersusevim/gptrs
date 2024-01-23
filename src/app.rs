@@ -9,6 +9,7 @@ use futures::StreamExt;
 use log::{debug, error, info, warn};
 use std::error::Error;
 use tokio::sync::mpsc;
+use tui_logger::TuiWidgetState;
 use tui_textarea::TextArea;
 
 #[allow(clippy::module_name_repetitions)]
@@ -16,7 +17,6 @@ use tui_textarea::TextArea;
 pub type AppResult<T> = std::result::Result<T, Box<dyn Error>>;
 
 /// Application.
-#[derive(Debug)]
 pub struct App<'a> {
     /// Is the application running?
     pub running: bool,
@@ -32,6 +32,8 @@ pub struct App<'a> {
     pub chat_text: History,
     /// Is GPT currently generating text?
     pub generating: bool,
+    /// logger widget state
+    pub debug_state: TuiWidgetState,
 }
 
 impl Default for App<'_> {
@@ -45,6 +47,7 @@ impl Default for App<'_> {
             chat_scroll: (0, 0),
             chat_text: History::default(),
             generating: false,
+            debug_state: TuiWidgetState::default(),
         };
 
         for message in config.prompt {
