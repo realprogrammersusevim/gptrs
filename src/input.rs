@@ -337,6 +337,24 @@ impl Vim {
             }
             Mode::Insert => match input {
                 Input { key: Key::Esc, .. } => Transition::Mode(Mode::Normal),
+                Input { key: Key::Up, .. } => {
+                    textarea.move_cursor(CursorMove::Up);
+                    Transition::Mode(Mode::Insert)
+                }
+                Input { key: Key::Down, .. } => {
+                    textarea.move_cursor(CursorMove::Down);
+                    Transition::Mode(Mode::Insert)
+                }
+                Input { key: Key::Left, .. } => {
+                    textarea.move_cursor(CursorMove::Back);
+                    Transition::Mode(Mode::Insert)
+                }
+                Input {
+                    key: Key::Right, ..
+                } => {
+                    textarea.move_cursor(CursorMove::Forward);
+                    Transition::Mode(Mode::Insert)
+                }
                 Input {
                     key: Key::Char('w'),
                     ctrl: true,
@@ -386,6 +404,12 @@ impl<'a> StyledTextArea<'_> {
             },
             KeyCode::Left => Input {
                 key: Key::Left,
+                alt: event.modifiers.contains(KeyModifiers::ALT),
+                ctrl: event.modifiers.contains(KeyModifiers::CONTROL),
+                shift: event.modifiers.contains(KeyModifiers::SHIFT),
+            },
+            KeyCode::Right => Input {
+                key: Key::Right,
                 alt: event.modifiers.contains(KeyModifiers::ALT),
                 ctrl: event.modifiers.contains(KeyModifiers::CONTROL),
                 shift: event.modifiers.contains(KeyModifiers::SHIFT),
