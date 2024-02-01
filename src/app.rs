@@ -126,7 +126,18 @@ impl App<'_> {
                 role: Role::User,
                 content: StyledTextArea::text(&mut self.input_editor),
             });
+
             self.input_editor = StyledTextArea::styled_default();
+
+            if self.config.vim {
+                self.input_editor.set_block(
+                    StyledTextArea::styled_default()
+                        .block()
+                        .unwrap()
+                        .clone()
+                        .title(self.vim.mode.to_string()),
+                );
+            }
         }
     }
 
