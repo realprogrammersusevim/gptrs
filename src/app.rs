@@ -81,7 +81,8 @@ impl App<'_> {
         self.running = false;
     }
     pub fn scroll_down(&mut self, by_lines: u16) {
-        if self.chat_scroll.0 < u16::try_from(self.chat_text.len()).unwrap_or(10) - (by_lines) {
+        if self.chat_scroll.0 < u16::try_from(self.chat_text.text_lines).unwrap_or(10) - (by_lines)
+        {
             self.chat_scroll.0 += by_lines;
         }
     }

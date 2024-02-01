@@ -17,6 +17,7 @@ pub struct History {
     pub history: Vec<ChatCompletionRequestMessage>,
     pub current_response: String,
     pub text_width: u16,
+    pub text_lines: usize,
 }
 
 impl History {
@@ -57,6 +58,8 @@ impl History {
                 _ => {}
             }
         }
+
+        self.text_lines = message_text.len();
 
         message_text
     }
@@ -111,39 +114,6 @@ impl History {
                 .build()
                 .unwrap(),
         ));
-    }
-
-    /// # Panics
-    ///
-    /// Will panic if response contains something other than text
-    pub fn len(&mut self) -> usize {
-        let mut message_lines = 0;
-        for message in &self.history {
-            match message {
-                ChatCompletionRequestMessage::User(message) => {
-                    let text = message
-                        .content
-                        .as_ref()
-                        .map_or_else(String::new, |content| match content {
-                            Text(text) => text.clone(),
-                            Array(_) => panic!("GPTrs only supports text."),
-                        });
-                    let wrapped = wrap(&text, self.text_width as usize);
-                    message_lines += wrapped.len();
-                }
-                ChatCompletionRequestMessage::Assistant(message) => {
-                    let text = message
-                        .content
-                        .clone()
-                        .unwrap_or_else(|| "No content".to_string());
-                    let wrapped = wrap(&text, self.text_width as usize);
-                    message_lines += wrapped.len();
-                }
-                _ => {}
-            }
-        }
-
-        message_lines
     }
 
     pub fn is_empty(&mut self) -> bool {
