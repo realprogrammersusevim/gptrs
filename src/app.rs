@@ -50,9 +50,7 @@ impl Default for App<'_> {
             debug_state: TuiWidgetState::default(),
         };
 
-        for message in config.prompt {
-            def.chat_text.push(message);
-        }
+        def.chat_text.extend(config.prompt);
 
         if config.vim {
             def.input_editor.set_block(
@@ -179,5 +177,11 @@ impl App<'_> {
         });
 
         Ok(())
+    }
+
+    pub fn reset_history(&mut self) {
+        self.chat_text = History::default();
+        self.chat_text.extend(self.config.prompt.clone());
+        self.chat_scroll = (0, 0);
     }
 }

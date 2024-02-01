@@ -61,12 +61,8 @@ impl History {
         message_text
     }
 
-    /// # Panics
-    ///
-    /// Will panic if the ``ChatCompletionRequestMessage`` cannot be created with the ``Prompt``
-    /// content
-    pub fn push(&mut self, prompt: Prompt) {
-        let message = match prompt.role {
+    fn prompt_to_message(prompt: Prompt) -> ChatCompletionRequestMessage {
+        match prompt.role {
             Role::User => ChatCompletionRequestMessage::User(
                 ChatCompletionRequestUserMessageArgs::default()
                     .content(prompt.content)
@@ -85,9 +81,20 @@ impl History {
                     .build()
                     .unwrap(),
             ),
-        };
+        }
+    }
 
-        self.history.push(message);
+    /// # Panics
+    ///
+    /// Will panic if the ``ChatCompletionRequestMessage`` cannot be created with the ``Prompt``
+    /// content
+    pub fn push(&mut self, prompt: Prompt) {
+        self.history.push(Self::prompt_to_message(prompt));
+    }
+
+    pub fn extend(&mut self, prompts: Vec<Prompt>) {
+        let messages = prompts.into_iter().map(Self::prompt_to_message);
+        self.history.extend(messages);
     }
 
     /// # Panics

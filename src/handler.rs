@@ -27,6 +27,13 @@ pub async fn handle_key_events(
                 app.edit_input(key_event);
             }
         }
+        KeyCode::Char('r') => {
+            if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+                app.reset_history();
+            } else {
+                app.edit_input(key_event);
+            }
+        }
         _ => app.edit_input(key_event),
     }
     Ok(())
