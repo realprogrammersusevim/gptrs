@@ -1,3 +1,4 @@
+use crate::input::StyledTextArea;
 use crate::{
     app::{App, AppResult},
     event::Event,
@@ -54,6 +55,7 @@ pub async fn handle_new_message(app: &mut App<'_>, sender: mpsc::Sender<Event>) 
     app.append_message();
     app.generating = true;
     sender.send(Event::StartGeneration).await?;
+    app.chat_text.tokens = app.chat_text.num_tokens(&app.config.model);
 
     Ok(())
 }
@@ -79,6 +81,7 @@ pub async fn handle_start_generation(
 
 pub fn handle_token(app: &mut App<'_>, token: &str, first: bool) -> AppResult<()> {
     app.chat_text.push_stream(token, first);
+    app.chat_text.tokens = app.chat_text.num_tokens(&app.config.model);
 
     Ok(())
 }

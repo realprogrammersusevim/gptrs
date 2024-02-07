@@ -23,7 +23,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Max(4),
+            Constraint::Max(5),
             Constraint::Percentage(70),
             Constraint::Max(6),
         ])
@@ -44,9 +44,11 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     // Title widget
     let title = Paragraph::new(format!(
         "Model: {}\n\
-        API key: {}",
+        API key: {}\n\
+        Tokens: {}",
         app.config.model,
         mask_api_key(&app.config.api_key, 5),
+        app.chat_text.tokens
     ))
     .block(
         Block::default()

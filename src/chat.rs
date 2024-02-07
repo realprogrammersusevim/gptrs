@@ -9,6 +9,7 @@ use ratatui::{
     text::Line,
 };
 use textwrap::wrap;
+use tiktoken_rs::ChatCompletionRequestMessage as TokenChatCompletionRequestMessage;
 
 use crate::config::{Prompt, Role};
 
@@ -18,6 +19,7 @@ pub struct History {
     pub current_response: String,
     pub text_width: u16,
     pub text_lines: usize,
+    pub tokens: usize,
 }
 
 impl History {
@@ -122,5 +124,48 @@ impl History {
 
     pub fn clear_message(&mut self) {
         self.current_response = String::new();
+    }
+
+    pub fn num_tokens(&mut self, model: &str) -> usize {
+        let mut messages = vec![];
+        for message in &self.history {
+            messages.push(Self::message_to_token_message(message));
+        }
+        tiktoken_rs::num_tokens_from_messages(model, &messages).unwrap()
+    }
+
+    fn message_to_token_message(
+        message: &ChatCompletionRequestMessage,
+    ) -> TokenChatCompletionRequestMessage {
+        match message {
+            ChatCompletionRequestMessage::User(message) => {
+                let content = message
+                    .content
+                    .as_ref()
+                    .map_or_else(String::new, |content| match content {
+                        Text(text) => text.clone(),
+                        Array(_) => panic!("GPTrs only supports text."),
+                    });
+                TokenChatCompletionRequestMessage {
+                    role: message.role.to_string(),
+                    content: Some(content),
+                    name: None,
+                    function_call: None,
+                }
+            }
+            ChatCompletionRequestMessage::Assistant(message) => TokenChatCompletionRequestMessage {
+                role: message.role.to_string(),
+                content: message.content.clone(),
+                name: None,
+                function_call: None,
+            },
+            ChatCompletionRequestMessage::System(message) => TokenChatCompletionRequestMessage {
+                role: message.role.to_string(),
+                content: message.content.clone(),
+                name: None,
+                function_call: None,
+            },
+            _ => panic!("Unsupported message type"),
+        }
     }
 }
