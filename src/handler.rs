@@ -81,7 +81,6 @@ pub async fn handle_start_generation(
 
 pub fn handle_token(app: &mut App<'_>, token: &str, first: bool) -> AppResult<()> {
     app.chat_text.push_stream(token, first);
-    app.chat_text.tokens = app.chat_text.num_tokens(&app.config.model);
 
     Ok(())
 }
@@ -89,6 +88,7 @@ pub fn handle_token(app: &mut App<'_>, token: &str, first: bool) -> AppResult<()
 pub fn handle_end(app: &mut App<'_>) -> AppResult<()> {
     app.chat_text.clear_message();
     app.generating = false;
+    app.chat_text.tokens = app.chat_text.num_tokens(&app.config.model);
 
     Ok(())
 }
