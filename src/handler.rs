@@ -1,7 +1,7 @@
-use crate::input::StyledTextArea;
 use crate::{
     app::{App, AppResult},
     event::Event,
+    input::StyledTextArea,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use tokio::sync::mpsc;
@@ -52,11 +52,13 @@ pub async fn handle_new_message(app: &mut App<'_>, sender: mpsc::Sender<Event>) 
     if app.input_editor.is_empty() {
         return Ok(());
     }
+    let text = StyledTextArea::text(&mut app.input_editor);
     app.append_message();
     app.generating = true;
     sender.send(Event::StartGeneration).await?;
-    app.chat_text.tokens = app.chat_text.num_tokens(&app.config.model);
-
+    let enc = tiktoken_rs::cl100k_base().unwrap();
+    let tokens = enc.encode_with_special_tokens(&text);
+    app.chat_text.tokens += tokens.len();
     Ok(())
 }
 
@@ -81,6 +83,7 @@ pub async fn handle_start_generation(
 
 pub fn handle_token(app: &mut App<'_>, token: &str, first: bool) -> AppResult<()> {
     app.chat_text.push_stream(token, first);
+    app.chat_text.tokens += 1;
 
     Ok(())
 }
@@ -88,7 +91,6 @@ pub fn handle_token(app: &mut App<'_>, token: &str, first: bool) -> AppResult<()
 pub fn handle_end(app: &mut App<'_>) -> AppResult<()> {
     app.chat_text.clear_message();
     app.generating = false;
-    app.chat_text.tokens = app.chat_text.num_tokens(&app.config.model);
 
     Ok(())
 }
