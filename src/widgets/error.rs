@@ -1,4 +1,5 @@
 use ratatui::prelude::*;
+use ratatui::widgets::BorderType;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Widget, Wrap};
 use std::cmp::min;
 use std::fmt;
@@ -72,6 +73,7 @@ impl Widget for PopupMessage {
         let block = Block::default()
             .title(title)
             .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(color));
         Paragraph::new(self.message.clone())
             .style(Style::default().fg(color))
