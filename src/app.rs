@@ -1,6 +1,8 @@
 use crate::config::{Prompt, Role};
 use crate::event::Event;
 use crate::input::{Mode, StyledTextArea, Transition, Vim};
+use crate::widgets::error::PopupMessage;
+use crate::widgets::error::Severity;
 use crate::{chat::History, config::Final};
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::Client;
@@ -34,6 +36,8 @@ pub struct App<'a> {
     pub generating: bool,
     /// logger widget state
     pub debug_state: TuiWidgetState,
+    // if we have an error message
+    pub error: Option<PopupMessage>,
 }
 
 impl Default for App<'_> {
@@ -48,6 +52,7 @@ impl Default for App<'_> {
             chat_text: History::default(),
             generating: false,
             debug_state: TuiWidgetState::default(),
+            error: None,
         };
 
         def.chat_text.extend(config.prompt);
@@ -181,7 +186,13 @@ impl App<'_> {
                             }
                         }
                     }
-                    Err(res) => warn!("Stream response returned {:?}", res),
+                    Err(res) => {
+                        warn!("Stream response returned {:?}", res);
+                        sender
+                            .send(Event::ErrorPopup(Severity::Error, res.to_string()))
+                            .await
+                            .unwrap();
+                    }
                 }
             }
 

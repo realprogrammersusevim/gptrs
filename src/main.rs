@@ -1,11 +1,13 @@
 use gptrs::app::{App, AppResult};
 use gptrs::event::{Event, Handler};
 use gptrs::handler::{
-    handle_end, handle_key_events, handle_mouse_events, handle_new_message,
+    handle_end, handle_error_popup, handle_key_events, handle_mouse_events, handle_new_message,
     handle_start_generation, handle_token,
 };
 use gptrs::tui::Tui;
 use gptrs::utils::initialize_logger;
+use gptrs::widgets;
+use gptrs::widgets::error::PopupMessage;
 use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
@@ -81,6 +83,12 @@ async fn main() -> AppResult<()> {
             Event::Token(token, first) => handle_token(&mut app, &token, first)?,
             Event::EndGeneration => handle_end(&mut app)?,
             Event::Resize(_, _) => {}
+            Event::ErrorPopup(severity, message) => {
+                handle_error_popup(&mut app, severity, message)?
+            }
+            Event::ClearErrorPopup => {
+                app.error = None;
+            }
         };
     }
 

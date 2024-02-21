@@ -1,4 +1,5 @@
 use crate::app::AppResult;
+use crate::widgets::error::Severity;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
 use log::error;
 use std::time::{Duration, Instant};
@@ -24,6 +25,10 @@ pub enum Event {
     EndGeneration,
     /// Terminal resize.
     Resize(u16, u16),
+    /// Show an error popup.
+    ErrorPopup(Severity, String),
+    /// Clear the error popup.
+    ClearErrorPopup,
 }
 
 /// Terminal event handler.

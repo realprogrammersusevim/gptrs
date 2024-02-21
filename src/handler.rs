@@ -1,3 +1,4 @@
+use crate::widgets::error::{PopupMessage, Severity};
 use crate::{
     app::{App, AppResult},
     event::Event,
@@ -12,6 +13,11 @@ pub async fn handle_key_events(
     app: &mut App<'_>,
     sender: mpsc::Sender<Event>,
 ) -> AppResult<()> {
+    // Clear the error popup if it's visible
+    if app.error.is_some() {
+        sender.send(Event::ClearErrorPopup).await?;
+        return Ok(());
+    }
     match key_event.code {
         // Exit application on `Ctrl-C`
         KeyCode::Char('c' | 'C') => {
@@ -100,6 +106,11 @@ pub fn handle_mouse_events(
     second_event: Option<MouseEvent>,
     app: &mut App<'_>,
 ) -> AppResult<()> {
+    // Don't handle mouse events if the error popup is visible
+    if app.error.is_some() {
+        return Ok(());
+    }
+
     match second_event {
         Some(second) => {
             if mouse_event.kind == MouseEventKind::ScrollUp
@@ -123,6 +134,12 @@ pub fn handle_mouse_events(
             _ => {}
         },
     }
+
+    Ok(())
+}
+
+pub fn handle_error_popup(app: &mut App<'_>, severity: Severity, message: String) -> AppResult<()> {
+    app.error = Some(PopupMessage::new(message, severity));
 
     Ok(())
 }

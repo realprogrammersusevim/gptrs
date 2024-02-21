@@ -11,11 +11,6 @@ use crate::app::App;
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui-org/ratatui/tree/master/examples
-
     let area = frame.size();
 
     // The layout in that main view
@@ -90,6 +85,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let chat_input = app.input_editor.widget();
 
     frame.render_widget(chat_input, main_layout[2]);
+
+    if app.error.is_some() {
+        frame.render_widget(app.error.clone().unwrap(), frame.size());
+    }
 }
 
 /// Mask a displayed API key from shoulder snoopers
