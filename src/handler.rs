@@ -19,8 +19,8 @@ pub async fn handle_key_events(
         return Ok(());
     }
     match key_event.code {
-        // Exit application on `Ctrl-C`
-        KeyCode::Char('c' | 'C') => {
+        // Exit application on `Ctrl-c`
+        KeyCode::Char('c') => {
             if key_event.modifiers == KeyModifiers::CONTROL {
                 app.quit();
             } else {
@@ -41,7 +41,7 @@ pub async fn handle_key_events(
                 app.edit_input(key_event);
             }
         }
-        KeyCode::Char('R') => {
+        KeyCode::Char('t') => {
             if key_event.modifiers.contains(KeyModifiers::CONTROL) {
                 app.generating = true;
                 sender.send(Event::StartGeneration).await?;
