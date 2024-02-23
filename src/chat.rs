@@ -168,4 +168,27 @@ impl History {
             _ => panic!("Unsupported message type"),
         }
     }
+
+    pub fn message_to_string(message: &ChatCompletionRequestMessage) -> String {
+        match message {
+            ChatCompletionRequestMessage::User(message) => {
+                message
+                    .content
+                    .as_ref()
+                    .map_or_else(String::new, |content| match content {
+                        Text(text) => text.clone(),
+                        Array(_) => panic!("GPTrs only supports text."),
+                    })
+            }
+            ChatCompletionRequestMessage::Assistant(message) => message
+                .content
+                .clone()
+                .unwrap_or_else(|| "No content".to_string()),
+            _ => String::new(),
+        }
+    }
+
+    pub fn last(&mut self) -> Option<&ChatCompletionRequestMessage> {
+        self.history.last()
+    }
 }

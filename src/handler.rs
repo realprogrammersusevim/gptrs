@@ -49,6 +49,13 @@ pub async fn handle_key_events(
                 app.edit_input(key_event);
             }
         }
+        KeyCode::Char('x') => {
+            if key_event.modifiers == KeyModifiers::CONTROL {
+                app.copy_last_message(sender).await;
+            } else {
+                app.edit_input(key_event);
+            }
+        }
         _ => app.edit_input(key_event),
     }
     Ok(())

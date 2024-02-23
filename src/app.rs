@@ -6,6 +6,7 @@ use crate::widgets::error::Severity;
 use crate::{chat::History, config::Final};
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::Client;
+use clippers::Clipboard;
 use crossterm::event::KeyEvent;
 use futures::StreamExt;
 use log::{debug, error, info, warn};
@@ -206,5 +207,25 @@ impl App<'_> {
         self.chat_text = History::default();
         self.chat_text.extend(self.config.prompt.clone());
         self.chat_scroll = (0, 0);
+    }
+
+    pub async fn copy_last_message(&mut self, sender: mpsc::Sender<Event>) {
+        let last = self.chat_text.last().unwrap();
+        let last_text = History::message_to_string(&last.clone());
+
+        let did_write = Clipboard::get().write_text(&last_text);
+
+        match did_write {
+            Ok(()) => {}
+            Err(err) => {
+                sender
+                    .send(Event::ErrorPopup(
+                        Severity::Error,
+                        format!("Couldn't copy last message to clipboard: {err:?}"),
+                    ))
+                    .await
+                    .unwrap();
+            }
+        }
     }
 }

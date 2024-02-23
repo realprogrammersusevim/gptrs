@@ -6,8 +6,6 @@ use gptrs::handler::{
 };
 use gptrs::tui::Tui;
 use gptrs::utils::initialize_logger;
-use gptrs::widgets;
-use gptrs::widgets::error::PopupMessage;
 use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
