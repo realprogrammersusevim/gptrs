@@ -1,0 +1,10 @@
+{
+    "api_key": "<API_KEY>",
+    "model": "gpt-3.5-turbo",
+    "prompt": [
+        {
+            "role": "system",
+            "content": "Think step by step for any complex problems, especially those with math. Never use phrases like 'as an AI assistant.'"
+        }
+    ]
+}
