@@ -20,8 +20,6 @@ async fn main() -> AppResult<()> {
         initialize_logger();
     }
 
-    // debug!("{:?}", app);
-
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend).unwrap();

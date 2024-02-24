@@ -3,7 +3,6 @@ use clap::Parser;
 use core::panic;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use std::env;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
@@ -46,6 +45,8 @@ struct Config {
     offline: Option<bool>,
     #[clap(short, long, action = ArgAction::SetTrue, help = "Use Vim keybindings for text input.")]
     vim: Option<bool>,
+    #[clap(short, long, help = "The base URL for the OpenAI API.")]
+    api_base: Option<String>,
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -92,6 +93,7 @@ impl Default for Config {
         config_cli.api_key = config_cli.api_key.or(config_file.api_key);
         config_cli.model = config_cli.model.or(config_file.model);
         config_cli.prompt = config_cli.prompt.or(config_file.prompt);
+        config_cli.api_base = config_cli.api_base.or(config_file.api_base);
         // While the above options will either have a value or be None the flags will
         // either be True if set or False if not
         config_cli.debug = if config_cli.debug.unwrap() {
@@ -119,8 +121,10 @@ impl Default for Config {
             panic!(
                 "Missing a model to use. Supply one in the configuration file or with a CLI argument."
             )
-        } else if config_cli.prompt.is_none() {
-            panic!("Missing a prompt. Supply one in the configuration file or with a CLI argument.")
+        }
+
+        if config_cli.prompt.is_none() {
+            config_cli.prompt = Some(vec![]);
         }
 
         if config_cli.debug.is_none() {
@@ -135,6 +139,11 @@ impl Default for Config {
             config_cli.vim = Some(false);
         }
 
+        // Default to the OpenAI API base
+        if config_cli.api_base.is_none() {
+            config_cli.api_base = Some("https://api.openai.com/v1".to_string());
+        }
+
         config_cli
     }
 }
@@ -147,15 +156,12 @@ pub struct Final {
     pub debug: bool,
     pub offline: bool,
     pub vim: bool,
+    pub api_base: String,
 }
 
 impl Default for Final {
     fn default() -> Self {
         let config = Config::default();
-
-        // Annoyingly, the async-openai library only reads from this env var and can't be passed
-        // programmatically
-        env::set_var("OPENAI_API_KEY", config.api_key.clone().unwrap());
 
         Self {
             api_key: config.api_key.unwrap(),
@@ -164,6 +170,7 @@ impl Default for Final {
             debug: config.debug.unwrap(),
             offline: config.offline.unwrap(),
             vim: config.vim.unwrap(),
+            api_base: config.api_base.unwrap(),
         }
     }
 }

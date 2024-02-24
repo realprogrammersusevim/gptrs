@@ -4,6 +4,7 @@ use crate::input::{Mode, StyledTextArea, Transition, Vim};
 use crate::widgets::error::PopupMessage;
 use crate::widgets::error::Severity;
 use crate::{chat::History, config::Final};
+use async_openai::config::OpenAIConfig;
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::Client;
 use clippers::Clipboard;
@@ -157,8 +158,11 @@ impl App<'_> {
     pub fn start_generation(&mut self, sender: mpsc::Sender<Event>) -> Result<(), Box<dyn Error>> {
         let model = self.config.model.clone();
         let messages = self.chat_text.history.clone();
+        let key = self.config.api_key.clone();
+        let base = self.config.api_base.clone();
         tokio::spawn(async move {
-            let client = Client::new();
+            let config = OpenAIConfig::new().with_api_key(key).with_api_base(base);
+            let client = Client::with_config(config);
             debug!("Created a new client");
 
             let request = CreateChatCompletionRequestArgs::default()
