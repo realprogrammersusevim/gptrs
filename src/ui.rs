@@ -18,7 +18,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Max(5),
+            Constraint::Max(6),
             Constraint::Percentage(70),
             Constraint::Max(6),
         ])
@@ -40,9 +40,11 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let title = Paragraph::new(format!(
         "Model: {}\n\
         API key: {}\n\
+        API Base URL: {}\n\
         Tokens: {}",
         app.config.model,
         mask_api_key(&app.config.api_key, 5),
+        app.config.api_base,
         app.chat_text.tokens
     ))
     .block(
