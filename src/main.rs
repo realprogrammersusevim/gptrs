@@ -11,8 +11,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
 
-#[tokio::main]
-async fn main() -> AppResult<()> {
+fn main() -> AppResult<()> {
     // Create an application.
     let mut app = App::new();
 
@@ -44,7 +43,7 @@ async fn main() -> AppResult<()> {
             peeked = false;
             event = peeked_event.clone();
         } else {
-            event = tui.events.next().await?;
+            event = tui.events.next().unwrap();
         }
 
         if event != Event::Tick {
@@ -54,11 +53,11 @@ async fn main() -> AppResult<()> {
         match event {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
-                handle_key_events(key_event, &mut app, tui.events.sender()).await?;
+                handle_key_events(key_event, &mut app, tui.events.sender()).unwrap();
             }
             Event::Mouse(first) => {
                 // If there are two mouse events we can handle both of them at once.
-                let second = tui.events.next().await?;
+                let second = tui.events.next().unwrap();
                 peeked = true;
                 peeked_event = second.clone();
                 match second {
@@ -72,9 +71,9 @@ async fn main() -> AppResult<()> {
                     _ => handle_mouse_events(first, None, &mut app)?,
                 }
             }
-            Event::Message => handle_new_message(&mut app, tui.events.sender()).await?,
+            Event::Message => handle_new_message(&mut app, &tui.events.sender()).unwrap(),
             Event::StartGeneration => {
-                handle_start_generation(&mut app, tui.events.sender()).await?;
+                handle_start_generation(&mut app, tui.events.sender()).unwrap();
             }
             Event::Token(token, first) => handle_token(&mut app, &token, first)?,
             Event::EndGeneration => handle_end(&mut app)?,

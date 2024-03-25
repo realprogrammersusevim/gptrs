@@ -1,10 +1,11 @@
 use crate::app::AppResult;
+use crate::event::mpsc::SendError;
 use crate::widgets::error::Severity;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
 use log::error;
+use std::sync::mpsc;
+use std::thread;
 use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
-use tokio::task;
 
 /// Terminal events.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -40,7 +41,7 @@ pub struct Handler {
     /// Event receiver channel.
     receiver: mpsc::Receiver<Event>,
     /// Event handler thread.
-    handler: task::JoinHandle<()>,
+    handler: thread::JoinHandle<()>,
 }
 
 impl Handler {
@@ -48,10 +49,10 @@ impl Handler {
     /// Constructs a new instance of [`EventHandler`].
     pub fn new(tick_rate: u64) -> Self {
         let tick_rate = Duration::from_millis(tick_rate);
-        let (sender, receiver) = mpsc::channel(256);
+        let (sender, receiver) = mpsc::channel();
         let handler = {
             let sender = sender.clone();
-            tokio::spawn(async move {
+            thread::spawn(move || {
                 let mut last_tick = Instant::now();
                 loop {
                     let timeout = tick_rate
@@ -65,12 +66,11 @@ impl Handler {
                             CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
                             _ => unimplemented!(),
                         }
-                        .await
                         .expect("failed to send terminal event");
                     }
 
                     if last_tick.elapsed() >= tick_rate {
-                        if matches!(sender.send(Event::Tick).await, Ok(())) {
+                        if matches!(sender.send(Event::Tick), Ok(())) {
                             last_tick = Instant::now();
                         } else {
                             error!("Couldn't send the tick event. Assuming the app shut down.");
@@ -91,8 +91,8 @@ impl Handler {
     ///
     /// This function will always block the current thread if
     /// there is no data available and it's possible for more data to be sent.
-    pub async fn next(&mut self) -> AppResult<Event> {
-        Ok(self.receiver.recv().await.unwrap())
+    pub fn next(&mut self) -> AppResult<Event> {
+        Ok(self.receiver.recv().unwrap())
     }
 
     #[must_use]
@@ -100,7 +100,7 @@ impl Handler {
         self.sender.clone()
     }
 
-    pub async fn send(&self, event: Event) -> Result<(), mpsc::error::SendError<Event>> {
-        self.sender.send(event).await
+    pub fn send(&self, event: Event) -> Result<(), SendError<Event>> {
+        self.sender.send(event)
     }
 }

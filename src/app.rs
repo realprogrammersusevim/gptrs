@@ -1,18 +1,17 @@
-use crate::config::{Prompt, Role};
+use crate::api::stream_chat_completion;
+use crate::api::Role;
+use crate::config::Prompt;
 use crate::event::Event;
 use crate::input::{Mode, StyledTextArea, Transition, Vim};
 use crate::widgets::error::PopupMessage;
 use crate::widgets::error::Severity;
 use crate::{chat::History, config::Final};
-use async_openai::config::OpenAIConfig;
-use async_openai::types::CreateChatCompletionRequestArgs;
-use async_openai::Client;
 use clippers::Clipboard;
 use crossterm::event::KeyEvent;
-use futures::StreamExt;
 use log::{debug, error, info, warn};
 use std::error::Error;
-use tokio::sync::mpsc;
+use std::sync::mpsc;
+use std::thread;
 use tui_logger::TuiWidgetState;
 use tui_textarea::TextArea;
 
@@ -160,48 +159,12 @@ impl App<'_> {
         let messages = self.chat_text.history.clone();
         let key = self.config.api_key.clone();
         let base = self.config.api_base.clone();
-        tokio::spawn(async move {
-            let config = OpenAIConfig::new().with_api_key(key).with_api_base(base);
-            let client = Client::with_config(config);
-            debug!("Created a new client");
-
-            let request = CreateChatCompletionRequestArgs::default()
-                .model(model)
-                .max_tokens(2048u16)
-                .messages(messages)
-                .build()
+        thread::spawn(move || {
+            sender
+                .send(Event::Token("Generating text...".to_string(), true))
                 .unwrap();
-            info!("New request: {:?}", request);
-            let mut stream = client.chat().create_stream(request).await.unwrap();
-            let mut first = true;
-            while let Some(result) = stream.next().await {
-                debug!("Handling {:?}", result);
-                match result {
-                    Ok(response) => {
-                        for chat_choice in &response.choices {
-                            if let Some(ref content) = chat_choice.delta.content {
-                                match sender.send(Event::Token(content.to_string(), first)).await {
-                                    Ok(()) => {}
-                                    Err(err) => {
-                                        error!("Couldn't send event because of this error: {err:?}. Assuming we shut down.");
-                                        return;
-                                    }
-                                }
-                                first = false;
-                            }
-                        }
-                    }
-                    Err(res) => {
-                        warn!("Stream response returned {:?}", res);
-                        sender
-                            .send(Event::ErrorPopup(Severity::Error, res.to_string()))
-                            .await
-                            .unwrap();
-                    }
-                }
-            }
-
-            sender.send(Event::EndGeneration).await.unwrap();
+            stream_chat_completion(messages, &key, &base, &model, sender.clone());
+            sender.send(Event::EndGeneration).unwrap();
         });
 
         Ok(())
@@ -213,11 +176,11 @@ impl App<'_> {
         self.chat_scroll = (0, 0);
     }
 
-    pub async fn copy_last_message(&mut self, sender: mpsc::Sender<Event>) {
+    pub fn copy_last_message(&mut self, sender: &mpsc::Sender<Event>) {
         let last = self.chat_text.last().unwrap();
-        let last_text = History::message_to_string(&last.clone());
+        let last_text = &last.clone().to_string();
 
-        let did_write = Clipboard::get().write_text(&last_text);
+        let did_write = Clipboard::get().write_text(last_text);
 
         match did_write {
             Ok(()) => {}
@@ -227,7 +190,6 @@ impl App<'_> {
                         Severity::Error,
                         format!("Couldn't copy last message to clipboard: {err:?}"),
                     ))
-                    .await
                     .unwrap();
             }
         }

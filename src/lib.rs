@@ -127,3 +127,16 @@ pub mod utils;
 #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
 /// Error widget
 pub mod widgets;
+
+#[warn(
+    clippy::pedantic,
+    clippy::perf,
+    clippy::complexity,
+    clippy::suspicious,
+    clippy::style,
+    clippy::correctness,
+    clippy::nursery
+)]
+#[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+/// OpenAI API implementation
+pub mod api;

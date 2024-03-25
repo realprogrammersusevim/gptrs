@@ -5,17 +5,17 @@ use crate::{
     input::StyledTextArea,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
-use tokio::sync::mpsc;
+use std::sync::mpsc;
 
 /// Handles the key events and updates the state of [`App`].
-pub async fn handle_key_events(
+pub fn handle_key_events(
     key_event: KeyEvent,
     app: &mut App<'_>,
     sender: mpsc::Sender<Event>,
 ) -> AppResult<()> {
     // Clear the error popup if it's visible
     if app.error.is_some() {
-        sender.send(Event::ClearErrorPopup).await?;
+        sender.send(Event::ClearErrorPopup).unwrap();
         return Ok(());
     }
     match key_event.code {
@@ -29,7 +29,7 @@ pub async fn handle_key_events(
         }
         KeyCode::Char('d') => {
             if key_event.modifiers.contains(KeyModifiers::CONTROL) {
-                sender.send(Event::Message).await?;
+                sender.send(Event::Message).unwrap();
             } else {
                 app.edit_input(key_event);
             }
@@ -44,14 +44,14 @@ pub async fn handle_key_events(
         KeyCode::Char('t') => {
             if key_event.modifiers.contains(KeyModifiers::CONTROL) {
                 app.generating = true;
-                sender.send(Event::StartGeneration).await?;
+                sender.send(Event::StartGeneration).unwrap();
             } else {
                 app.edit_input(key_event);
             }
         }
         KeyCode::Char('x') => {
             if key_event.modifiers == KeyModifiers::CONTROL {
-                app.copy_last_message(sender).await;
+                app.copy_last_message(&sender);
             } else {
                 app.edit_input(key_event);
             }
@@ -61,32 +61,29 @@ pub async fn handle_key_events(
     Ok(())
 }
 
-pub async fn handle_new_message(app: &mut App<'_>, sender: mpsc::Sender<Event>) -> AppResult<()> {
+pub fn handle_new_message(app: &mut App<'_>, sender: &mpsc::Sender<Event>) -> AppResult<()> {
     if app.input_editor.is_empty() {
         return Ok(());
     }
     let text = StyledTextArea::text(&mut app.input_editor);
     app.append_message();
     app.generating = true;
-    sender.send(Event::StartGeneration).await?;
+    sender.send(Event::StartGeneration).unwrap();
     let enc = tiktoken_rs::cl100k_base().unwrap();
     let tokens = enc.encode_with_special_tokens(&text);
     app.chat_text.tokens += tokens.len();
     Ok(())
 }
 
-pub async fn handle_start_generation(
-    app: &mut App<'_>,
-    sender: mpsc::Sender<Event>,
-) -> AppResult<()> {
+pub fn handle_start_generation(app: &mut App<'_>, sender: mpsc::Sender<Event>) -> AppResult<()> {
     if app.config.offline {
         sender
             .send(Event::Token(
                 "Running in **offline** mode.".to_string(),
                 true,
             ))
-            .await?;
-        sender.send(Event::EndGeneration).await?;
+            .unwrap();
+        sender.send(Event::EndGeneration).unwrap();
     } else {
         app.start_generation(sender)?;
     }

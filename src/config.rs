@@ -1,3 +1,4 @@
+use crate::api;
 use clap::ArgAction;
 use clap::Parser;
 use core::panic;
@@ -6,17 +7,9 @@ use serde_json::Result;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Role {
-    User,
-    Assistant,
-    System,
-}
-
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct Prompt {
-    pub role: Role,
+    pub role: api::Role,
     pub content: String,
 }
 
