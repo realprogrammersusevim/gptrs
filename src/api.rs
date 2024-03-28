@@ -3,13 +3,9 @@ use crate::event::Event;
 use curl::easy::{Easy, List};
 use log::debug;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 use std::io::{Cursor, Read};
-use std::rc::Rc;
-use std::str;
+use std::str::{self, Utf8Error};
 use std::sync::mpsc;
-use std::sync::Mutex;
-use std::time::Duration;
 use tiktoken_rs::ChatCompletionRequestMessage as TokenChatCompletionRequestMessage;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +30,7 @@ impl std::fmt::Display for Role {
 pub struct ChatMessage {
     pub content: String,
     pub role: Role,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
 
@@ -79,17 +76,29 @@ impl std::fmt::Display for ChatMessage {
 pub struct ChatCompletionRequest {
     messages: Vec<ChatMessage>,
     model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     frequency: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     logit_bias: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     logprobs: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     top_logprobs: Option<i8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_tokens: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     n: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     presence_penalty: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     seed: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     stop: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f32>,
 }
 
@@ -175,105 +184,95 @@ pub struct ChatCompletionChunk {
     choices: Vec<ChatCompletionStreamChoice>,
 }
 
-/// A single Server-Sent Event.
-#[derive(Debug)]
-pub struct StreamEvent {
-    /// Corresponds to the `id` field.
-    pub id: Option<String>,
-    /// Corresponds to the `event` field.
-    pub event_type: Option<String>,
-    /// All `data` fields concatenated by newlines.
-    pub data: String,
+/// A struct to iterate over a byte stream, yielding `serde_json::Value` objects from SSE data.
+#[derive(Debug, Clone)]
+pub struct SSEIterator {
+    buffer: Vec<u8>,
+    counter: usize,
 }
 
-/// Possible results from parsing a single event-stream line.
-#[derive(Debug, PartialEq, Eq)]
-pub enum ParseResult {
-    /// Line parsed successfully, but the event is not complete yet.
-    Next,
-    /// The event is complete now. Pass a new (empty) event for the next call.
-    Dispatch,
-    /// Set retry time.
-    SetRetry(Duration),
-}
-
-pub fn parse_event_line(line: &str, event: &mut StreamEvent) -> ParseResult {
-    let line = line.trim_end_matches(|c| c == '\r' || c == '\n');
-    if line.is_empty() {
-        debug!("Line is empty");
-        ParseResult::Dispatch
-    } else {
-        debug!("Line is not empty");
-        let (field, value) = line.find(':').map_or((line, ""), |pos| {
-            let (f, v) = line.split_at(pos);
-            // Strip : and an optional space.
-            let v = &v[1..];
-            let v = if v.starts_with(' ') { &v[1..] } else { v };
-            (f, v)
-        });
-
-        match field {
-            "event" => {
-                event.event_type = Some(value.to_string());
-            }
-            "data" => {
-                event.data.push_str(value);
-                event.data.push('\n');
-            }
-            "id" => {
-                event.id = Some(value.to_string());
-            }
-            "retry" => {
-                if let Ok(retry) = value.parse::<u64>() {
-                    return ParseResult::SetRetry(Duration::from_millis(retry));
-                }
-            }
-            _ => (), // ignored
+impl SSEIterator {
+    /// Creates a new `SSEIterator`.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            buffer: Vec::new(),
+            counter: 0,
         }
+    }
 
-        ParseResult::Next
+    /// Appends new bytes to the internal buffer.
+    pub fn push(&mut self, bytes: Vec<u8>) {
+        self.buffer.extend(bytes);
     }
 }
 
-// pub fn stream_chat_completion(
-//     requests: Vec<ChatMessage>,
-//     api_key: &str,
-//     base_url: &str,
-//     model: &str,
-//     channel: mpsc::Sender<Event>,
-// ) {
-//     let request = ChatCompletionRequest::new(requests, model.to_string(), true);
-//     let request_payload = serde_json::to_string(&request).unwrap();
-//     let mut data = Cursor::new(request_payload.into_bytes());
-//
-//     let url = format!("{base_url}/chat/completions");
-//
-//     let mut headers = List::new();
-//     headers
-//         .append(format!("Authorization: Bearer {api_key}").as_str())
-//         .unwrap();
-//     headers.append("Content-Type: application/json").unwrap();
-//
-//     let mut easy = Easy::new();
-//     easy.post(true).unwrap();
-//     easy.url(&url).unwrap();
-//     easy.http_headers(headers).unwrap();
-//     easy.post_field_size(data.get_ref().len() as u64).unwrap();
-//
-//     easy.read_function(move |buf| Ok(data.read(buf).unwrap_or(0)))
-//         .unwrap();
-//
-//     debug!("All good so far. About to set up the write_function");
-//
-//     let mut accumulator = Vec::new();
-//     let mut current_event = StreamEvent {
-//         id: None,
-//         event_type: None,
-//         data: String::new(),
-//     };
-//     let mut first = true;
-//
-// Your original `stream_chat_completion` function, adjusted for SSE parsing
+impl Default for SSEIterator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Iterator for SSEIterator {
+    type Item = Result<ChatCompletionChunk, Utf8Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let buff = self.buffer.clone();
+        let buffer_str = match str::from_utf8(&buff) {
+            Ok(bs) => bs,
+            Err(e) => return Some(Err(e)),
+        };
+
+        debug!("Buffer: {:?}", buffer_str);
+
+        if let Some((pos, _)) = buffer_str.match_indices("\n\n").next() {
+            let (event, remaining) = buffer_str.split_at(pos);
+            self.buffer = Vec::from(remaining[2..].as_bytes()); // Skip the "\n\n" and keep the rest.
+            let event = event.trim_start_matches("data: "); // Remove the `data: ` prefix from the event string.
+
+            match serde_json::from_str::<ChatCompletionChunk>(event) {
+                Ok(json) => {
+                    self.counter += 1;
+                    Some(Ok(json))
+                }
+                Err(_e) => None,
+            }
+        } else {
+            None // No complete JSON object was found.
+        }
+    }
+}
+
+fn parse_data(data: &[u8], sse_parser: &mut SSEIterator, channel: &mpsc::Sender<Event>) -> usize {
+    debug!("Received data: {:?}", data);
+
+    // Iterate through the SSEIterator to get JSON objects.
+    for json_result in sse_parser.clone() {
+        match json_result {
+            Ok(json) => debug!("Parsed JSON object: {:?}", json),
+            Err(e) => debug!("Error parsing JSON: {}", e),
+        }
+    }
+
+    sse_parser.push(data.to_vec());
+    match sse_parser.next() {
+        Some(Ok(chunk)) => {
+            debug!("Received chunk: {:?}", chunk);
+            let content = chunk.choices.last().unwrap().delta.content.clone().unwrap();
+            let first = sse_parser.counter == 1;
+            channel.send(Event::Token(content, first)).unwrap();
+        }
+        Some(Err(e)) => {
+            debug!("Error parsing JSON object: {}", e);
+        }
+        None => {
+            debug!("No complete JSON object found.");
+        }
+    }
+
+    data.len()
+}
+
 pub fn stream_chat_completion(
     requests: Vec<ChatMessage>,
     api_key: &str,
@@ -282,14 +281,15 @@ pub fn stream_chat_completion(
     channel: mpsc::Sender<Event>,
 ) {
     let request = ChatCompletionRequest::new(requests, model.to_string(), true); // Placeholder for your actual request initialization
+    debug!("Request: {:?}", request);
     let request_payload = serde_json::to_string(&request).unwrap(); // Serializing the request payload
     let mut data = Cursor::new(request_payload.into_bytes());
 
-    let url = format!("{}/chat/completions", base_url);
+    let url = format!("{base_url}/chat/completions");
 
     let mut headers = List::new();
     headers
-        .append(&format!("Authorization: Bearer {}", api_key))
+        .append(&format!("Authorization: Bearer {api_key}"))
         .unwrap();
     headers.append("Content-Type: application/json").unwrap();
 
@@ -302,128 +302,10 @@ pub fn stream_chat_completion(
     easy.read_function(move |buf| Ok(data.read(buf).unwrap_or(0)))
         .unwrap();
 
-    let mut accumulator = Vec::new();
-    let current_event = StreamEvent {
-        id: None,
-        event_type: None,
-        data: String::new(),
-    }; // Placeholder for your actual event initialization
-    let mut first = true;
+    let mut sse_parser = SSEIterator::new();
 
-    easy.write_function(move |data| {
-        accumulator.extend_from_slice(data);
-
-        while let Some(pos) = accumulator.iter().position(|&x| x == b'\n') {
-            let next = pos + 1;
-            if next < accumulator.len() && accumulator[next] == b'\n' {
-                // We've found a double newline, indicating the end of an event
-                let event_data = &accumulator[..next - 1]; // Exclude the first newline
-                let event_str = str::from_utf8(event_data).unwrap_or_default();
-
-                // Process the SSE event string (`event_str`) here
-                // This is where you should parse the `event_str` to handle different fields like "event:" and "data:"
-                // For simplification, let's assume `event_str` directly contains the data you're interested in and dispatch it
-                if let Ok(parsed_chunk) = serde_json::from_str::<ChatCompletionChunk>(event_str) {
-                    let event = Event::Token(
-                        parsed_chunk
-                            .choices
-                            .first()
-                            .unwrap()
-                            .delta
-                            .content
-                            .clone()
-                            .unwrap(),
-                        first,
-                    );
-                    channel.send(event).unwrap();
-                    first = false; // Update the first flag after sending the first event
-                }
-
-                // Clear processed event data from the accumulator
-                accumulator.drain(..=next);
-            } else {
-                // break; // If we haven't found a complete event, break
-            }
-        }
-
-        Ok(data.len())
-    })
-    .unwrap();
+    easy.write_function(move |data| Ok(parse_data(data, &mut sse_parser, &channel)))
+        .unwrap();
 
     easy.perform().unwrap();
 }
-
-//     easy.write_function(move |data| {
-//         accumulator.extend_from_slice(data);
-//
-//         let mut deletion_index = 0;
-//
-//         // Process each line as it's completed
-//         for (index, &item) in accumulator.iter().enumerate() {
-//             debug!("{}: {}", index, item.to_string());
-//             if item == b'\n' || item == b'\r' {
-//                 debug!("Found the end of a line.");
-//                 // Extract the line from the accumulator and process it
-//                 let line = str::from_utf8(&accumulator[..index]).unwrap_or_default();
-//                 // Your line processing logic here
-//                 deletion_index = index + 1;
-//
-//                 match parse_event_line(line, &mut current_event) {
-//                     ParseResult::Dispatch => {
-//                         debug!("At ParseResult::Dispatch");
-//                         // Here, you’d handle the completed `current_event`
-//                         // For example, parse `current_event.data` as JSON if expected, then send through channel
-//
-//                         // If the event data is expected to be a JSON string resembling ChatCompletionChunk:
-//                         if let Ok(parsed_chunk) =
-//                             serde_json::from_str::<ChatCompletionChunk>(&current_event.data)
-//                         {
-//                             debug!("Parsed chunk: {:?}", parsed_chunk);
-//                             let event = Event::Token(
-//                                 parsed_chunk
-//                                     .choices
-//                                     .first()
-//                                     .unwrap()
-//                                     .delta
-//                                     .content
-//                                     .clone()
-//                                     .unwrap(),
-//                                 first,
-//                             );
-//                             channel.send(event).unwrap();
-//                             first = false; // Update the first flag appropriately after sending first event
-//                         } else {
-//                             debug!("Failed to parse chunk");
-//                         }
-//
-//                         // Prepare for the next event
-//                         current_event = StreamEvent {
-//                             id: None,
-//                             event_type: None,
-//                             data: String::new(),
-//                         };
-//                     }
-//                     ParseResult::Next => {
-//                         debug!("At ParseResult::Next");
-//                         // Handle next
-//                     }
-//                     ParseResult::SetRetry(retry_duration) => {
-//                         debug!("At ParseResult::SetRetry");
-//                         // Optionally handle retry logic here, for example:
-//                         debug!("Set retry duration to: {:?}", retry_duration);
-//                     }
-//                 }
-//             }
-//         }
-//
-//         // Remove processed bytes from accumulator
-//         accumulator.drain(..deletion_index);
-//
-//         debug!("All done with the write_function. About to return.");
-//
-//         Ok(data.len())
-//     })
-//     .unwrap();
-//
-//     easy.perform().unwrap();
-// }

@@ -8,7 +8,7 @@ use crate::widgets::error::Severity;
 use crate::{chat::History, config::Final};
 use clippers::Clipboard;
 use crossterm::event::KeyEvent;
-use log::{debug, error, info, warn};
+use log::warn;
 use std::error::Error;
 use std::sync::mpsc;
 use std::thread;
@@ -160,9 +160,6 @@ impl App<'_> {
         let key = self.config.api_key.clone();
         let base = self.config.api_base.clone();
         thread::spawn(move || {
-            sender
-                .send(Event::Token("Generating text...".to_string(), true))
-                .unwrap();
             stream_chat_completion(messages, &key, &base, &model, sender.clone());
             sender.send(Event::EndGeneration).unwrap();
         });
