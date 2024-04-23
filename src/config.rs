@@ -60,8 +60,23 @@ impl Default for Config {
         // Parse cli args
         let mut config_cli = Self::parse();
 
-        // Check the file path
-        if config_cli.config_path.is_none() {
+        let config_dir = dirs::config_dir().unwrap().join("gptrs");
+        // If the CLI config file doesn't end in .json, assume it's in the config directory
+        if config_cli.config_path.is_some()
+            && config_cli
+                .config_path
+                .clone()
+                .unwrap()
+                .extension()
+                .is_none()
+        {
+            config_cli.config_path = Some(
+                config_dir
+                    .join(config_cli.config_path.unwrap())
+                    .with_extension("json"),
+            );
+        } else if config_cli.config_path.is_none() {
+            // Check the file path
             config_cli.config_path = Some(
                 dirs::config_dir()
                     .unwrap()
